@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;1,300&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ui-bg: #0e0d0b;
+  --ui-surface: #18160f;
+  --ui-border: #2a2720;
+  --ui-text: #c8bfaa;
+  --ui-muted: #5a5445;
+  --ui-accent: #c8a96e;
+  --sidebar-w: 280px;
+}
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  display: flex;
+}

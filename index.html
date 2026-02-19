@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Film Emulator</title>
+</head>
+<body>
+
+<nav id="sidebar"></nav>
+
+<main id="main">
+  <div id="content"></div>
+  <canvas id="grain-canvas"></canvas>
+  <div id="vignette-overlay"></div>
+
+  <div id="film-card-selector"></div>
+
+  <div id="status-bar">
+    <div class="status-item"><div class="status-dot"></div><span id="gl-status">WebGL ready</span></div>
+    <div class="status-item"><span id="film-status"></span></div>
+    <div class="status-item"><span>grain=webgl · grade=css · content=dom</span></div>
+  </div>
+</main>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
