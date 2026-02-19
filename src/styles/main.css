@@ -14,6 +14,9 @@
   background: #f2ede4;
   color: #1a1610;
   transition: filter 0.35s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* ── GRAIN CANVAS — pure overlay, click-through ── */

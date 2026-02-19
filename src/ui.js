@@ -110,52 +110,15 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
 
   /* ── Demo content ──────────────────────────────────────────── */
   contentRoot.innerHTML = `
-    <p class="content-eyebrow">Interactive Demo — content is fully live</p>
-    <h2 class="content-title">The <em>grain</em> remembers<br>what the eye forgets</h2>
-
-    <p class="interactive-note">
-      ↓ Everything below is real DOM. Click, type, scroll — the film effect is a pure overlay.
-    </p>
+    <p class="content-eyebrow">Susan Sontag · June 10, 2025</p>
+    <h2 class="content-title">To collect <em>photographs</em><br>is to collect the world</h2>
 
     <p class="content-body">
-      Silver halide crystals suspended in gelatin. Each frame a unique
-      arrangement of imperfection — a texture that carries time, light,
-      and the chemistry of the moment. No two frames identical.
+      To photograph is to appropriate the thing photographed. It means putting oneself into a certain relation to the world that feels like knowledge—and, therefore, like power. A now notorious first fall into alienation, habituating people to abstract the world into printed words, is supposed to have engendered that surplus of Faustian energy and psychic damage needed to build modern, inorganic societies. But print seems a less treacherous form of leaching out the world, of turning it into a mental object, than photographic images, which now provide most of the knowledge people have about the look of the past and the reach of the present. What is written about a person or an event is frankly an interpretation, as are handmade visual statements, like paintings and drawings. Photographed images do not seem to be statements about the world so much as pieces of it, miniatures of reality that anyone can make or acquire.
     </p>
-
-    <div class="content-input-row">
-      <input class="content-input" type="text" placeholder="Type something here…" />
-      <button class="content-btn" id="demo-submit">Submit</button>
-    </div>
-
-    <div class="content-grid">
-      <div class="content-card" data-demo="iso">
-        <div class="content-card-label">ISO · click me</div>
-        <div class="content-card-val">400</div>
-      </div>
-      <div class="content-card" data-demo="aperture">
-        <div class="content-card-label">Aperture · click me</div>
-        <div class="content-card-val">f/2.8</div>
-      </div>
-      <div class="content-card" data-demo="speed">
-        <div class="content-card-label">Speed · click me</div>
-        <div class="content-card-val">1/60</div>
-      </div>
-    </div>
-
-    <div class="content-strip">
-      <div class="content-block" style="background:#c8b89a;"></div>
-      <div class="content-block" style="background:#b0a080;"></div>
-      <div class="content-block" style="background:#d4c4a8;"></div>
-      <div class="content-block" style="background:#a09070;"></div>
-      <div class="content-block" style="background:#e0d4bc;"></div>
-    </div>
-
-    <div>
-      <a class="content-link" href="#" onclick="return false">→ About this technique</a><br>
-      <a class="content-link" href="#" onclick="return false">→ Film stock reference</a><br>
-      <a class="content-link" href="#" onclick="return false">→ WebGL shader source</a>
-    </div>
+    <p class="content-body">
+      Photographs, which fiddle with the scale of the world, themselves get reduced, blown up, cropped, retouched, doctored, tricked out. They age, plagued by the usual ills of paper objects; they disappear; they become valuable, and get bought and sold; they are reproduced. Photographs, which package the world, seem to invite packaging. They are stuck in albums, framed and set on tables, tacked on walls, projected as slides. Newspapers and magazines feature them; cops alphabetize them; museums exhibit them; publishers compile them.
+    </p>
   `;
 
   /* ── Wire film buttons (wired after card selector sets up switchFilm) ── */
@@ -192,29 +155,6 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
       emulator[s.prop] = v;
     }
   }
-
-  /* ── Wire demo interactions ────────────────────────────────── */
-  const submitBtn = document.getElementById('demo-submit');
-  submitBtn.addEventListener('click', () => {
-    submitBtn.textContent = submitBtn.textContent === 'Submit' ? 'Sent ✓' : 'Submit';
-  });
-
-  contentRoot.querySelectorAll('.content-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const val = card.querySelector('.content-card-val');
-      switch (card.dataset.demo) {
-        case 'iso':
-          val.textContent = Math.floor(Math.random() * 800 + 100);
-          break;
-        case 'aperture':
-          val.textContent = 'f/' + (Math.random() * 8 + 1.4).toFixed(1);
-          break;
-        case 'speed':
-          val.textContent = '1/' + Math.floor(Math.random() * 500 + 30);
-          break;
-      }
-    });
-  });
 
   /* ── Stacked card film selector ──────────────────────────────── */
   const cardStockIds = Object.keys(STOCKS).filter(id => id !== 'none');
