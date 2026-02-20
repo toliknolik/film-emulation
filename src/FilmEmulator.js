@@ -2,11 +2,10 @@ import STOCKS from './film-stocks.js';
 import { VERT_SRC, FRAG_SRC } from './shaders.js';
 
 /**
- * FilmEmulator — manages three independent overlay layers:
+ * FilmEmulator — manages two independent overlay layers:
  *
- *  1. Color grade  →  CSS filter on the content element
+ *  1. Color grade  →  CSS filter on the content element (+ blur)
  *  2. Grain        →  WebGL canvas, mix-blend-mode: soft-light, pointer-events: none
- *  3. Vignette     →  CSS radial-gradient div, pointer-events: none
  *
  * The WebGL context is created WITHOUT alpha (alpha: false) so the canvas
  * backbuffer is opaque RGB. The grain shader writes 0.5-centred grey;
@@ -18,20 +17,18 @@ export default class FilmEmulator {
    * @param {object} opts
    * @param {HTMLElement}      opts.content        – the element that gets the CSS filter
    * @param {HTMLCanvasElement} opts.grainCanvas    – canvas for WebGL grain overlay
-   * @param {HTMLElement}      opts.vignetteEl      – div for CSS vignette overlay
    * @param {function}         [opts.onStatusChange] – called with status strings
    */
-  constructor({ content, grainCanvas, vignetteEl, onStatusChange }) {
+  constructor({ content, grainCanvas, onStatusChange }) {
     this._content = content;
     this._canvas = grainCanvas;
-    this._vignette = vignetteEl;
     this._onStatus = onStatusChange || (() => {});
 
     this._filmId = 'portra';
     this._intensity = 1.0;
     this._size = 1.0;
     this._grade = 1.0;
-    this._vignetteAmt = 1.0;
+    this._blur = 0;
 
     // WebGL state
     this._gl = null;
@@ -62,15 +59,17 @@ export default class FilmEmulator {
   get grade() { return this._grade; }
   set grade(v) { this._grade = v; }
 
-  get vignetteAmount() { return this._vignetteAmt; }
-  set vignetteAmount(v) { this._vignetteAmt = v; }
+  get blur() { return this._blur; }
+  set blur(v) { this._blur = Math.max(0, v); }
 
-  /** Apply all three layers in one shot. */
+  /** Apply all layers in one shot. */
   apply() {
     this._applyGrade();
-    this._applyVignette();
     this._renderGrain();
   }
+
+  /** Update just the CSS filter (grade + blur) without re-rendering grain. */
+  applyFilter() { this._applyGrade(); }
 
   /** Clean up event listeners and GL resources. */
   destroy() {
@@ -172,25 +171,7 @@ export default class FilmEmulator {
 
   _applyGrade() {
     const stock = this.stock;
-    this._content.style.filter = stock.buildCSSFilter(this._grade);
-  }
-
-  /* ── vignette (CSS radial-gradient) ────────────────────────── */
-
-  _applyVignette() {
-    const stock = this.stock;
-    const str = stock.vignetteStr * this._vignetteAmt;
-
-    if (str <= 0 || this._filmId === 'none') {
-      this._vignette.style.opacity = '0';
-      return;
-    }
-
-    const alpha = Math.min(str * 0.75, 0.88).toFixed(3);
-    const col1 = stock.vignetteColor.replace('VAL', alpha);
-    const col0 = stock.vignetteColor.replace('VAL', '0');
-    this._vignette.style.background =
-      `radial-gradient(ellipse at center, ${col0} 38%, ${col1} 100%)`;
-    this._vignette.style.opacity = '1';
+    const filter = stock.buildCSSFilter(this._grade);
+    this._content.style.filter = filter + ` blur(${this._blur.toFixed(1)}px)`;
   }
 }

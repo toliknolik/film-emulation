@@ -8,7 +8,6 @@ import { initUI } from './ui.js';
 
 const content = document.getElementById('content');
 const grainCanvas = document.getElementById('grain-canvas');
-const vignetteEl = document.getElementById('vignette-overlay');
 const glStatus = document.getElementById('gl-status');
 const filmStatus = document.getElementById('film-status');
 const sidebar = document.getElementById('sidebar');
@@ -17,7 +16,6 @@ const cardSelector = document.getElementById('film-card-selector');
 const emulator = new FilmEmulator({
   content,
   grainCanvas,
-  vignetteEl,
   onStatusChange(msg) { glStatus.textContent = msg; },
 });
 

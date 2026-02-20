@@ -3,7 +3,6 @@
  *
  * Each stock configures:
  *  - grainIntensity / grainSize / channelSep  → fed to the WebGL grain shader
- *  - vignetteColor / vignetteStr              → CSS radial-gradient vignette
  *  - buildCSSFilter(strength)                 → CSS filter string for the color grade
  *  - swatch                                   → CSS class suffix used by the UI
  *  - description                              → short label shown in sidebar
@@ -18,10 +17,8 @@ const STOCKS = {
     grainIntensity: 0.0,
     grainSize: 1.0,
     channelSep: 0.0,
-    vignetteColor: 'rgba(0,0,0,VAL)',
-    vignetteStr: 0.0,
     cardGradient: 'linear-gradient(236deg, #d4d0c8 4%, #a09888 96%)',
-    defaults: { intensity: 0, size: 1.0, grade: 0, vignette: 0 },
+    defaults: { intensity: 0, size: 1.0, grade: 0 },
     buildCSSFilter: () => '',
   },
 
@@ -33,10 +30,8 @@ const STOCKS = {
     grainIntensity: 1.0,
     grainSize: 1.1,
     channelSep: 1.4,
-    vignetteColor: 'rgba(20,10,0,VAL)',
-    vignetteStr: 0.52,
     cardGradient: 'linear-gradient(236deg, #c9ef6f 4%, #c9bc74 96%)',
-    defaults: { intensity: 0.20, size: 0.40, grade: 0.90, vignette: 0 },
+    defaults: { intensity: 0.20, size: 0.40, grade: 0.90 },
     buildCSSFilter(s) {
       if (s === 0) return '';
       return [
@@ -57,10 +52,8 @@ const STOCKS = {
     grainIntensity: 0.55,
     grainSize: 0.7,
     channelSep: 0.9,
-    vignetteColor: 'rgba(0,5,20,VAL)',
-    vignetteStr: 0.35,
     cardGradient: 'linear-gradient(236deg, #287cc2 4%, #25efb6 96%)',
-    defaults: { intensity: 0.35, size: 1.40, grade: 1.30, vignette: 0 },
+    defaults: { intensity: 0.35, size: 1.40, grade: 1.30 },
     buildCSSFilter(s) {
       if (s === 0) return '';
       return [
@@ -81,10 +74,8 @@ const STOCKS = {
     grainSize: 1.45,
     channelSep: 0.0,
     monoGrain: true,
-    vignetteColor: 'rgba(0,0,0,VAL)',
-    vignetteStr: 0.72,
     cardGradient: 'linear-gradient(236deg, #ffffff 4%, #9f9f9f 96%)',
-    defaults: { intensity: 0.30, size: 0.30, grade: 1.20, vignette: 0 },
+    defaults: { intensity: 0.30, size: 0.30, grade: 1.20 },
     buildCSSFilter(s) {
       if (s === 0) return '';
       return [

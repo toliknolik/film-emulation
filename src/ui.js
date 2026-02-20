@@ -81,10 +81,6 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
         <div class="control-label">Color Grade <span id="val-grade">1.00</span></div>
         <input type="range" id="ctrl-grade" min="0" max="1.5" step="0.05" value="1.0">
       </div>
-      <div class="control-row">
-        <div class="control-label">Vignette <span id="val-vignette">1.00</span></div>
-        <input type="range" id="ctrl-vignette" min="0" max="2.0" step="0.05" value="1.0">
-      </div>
     </div>
 
     <div class="section-label">Animation</div>
@@ -104,6 +100,10 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
       <div class="control-row">
         <div class="control-label">Brightness <span id="val-dim">0.00</span></div>
         <input type="range" id="ctrl-dim" min="-1" max="1" step="0.05" value="0.00">
+      </div>
+      <div class="control-row">
+        <div class="control-label">Blur Speed <span id="val-blur-speed">0.35</span></div>
+        <input type="range" id="ctrl-blur-speed" min="0.1" max="1.5" step="0.05" value="0.35">
       </div>
     </div>
   `;
@@ -129,7 +129,6 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
     { inputId: 'ctrl-intensity', valueId: 'val-intensity', prop: 'intensity',      key: 'intensity' },
     { inputId: 'ctrl-size',      valueId: 'val-size',      prop: 'size',           key: 'size' },
     { inputId: 'ctrl-grade',     valueId: 'val-grade',     prop: 'grade',          key: 'grade' },
-    { inputId: 'ctrl-vignette',  valueId: 'val-vignette',  prop: 'vignetteAmount', key: 'vignette' },
   ];
 
   for (const s of sliders) {
@@ -165,6 +164,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
 
   // Label sits above card: label height (~19) + 10px gap (per Figma)
   const LABEL_Y_OFFSET = -29;
+  const BLUR_RADIUS = 12; // px — content blur when cards are fanned
 
   // Idle: flat stack with rotateZ tilts, active on top
   const idlePositions = [
@@ -237,6 +237,8 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
   function animateIdle() {
     cardState = 'idle';
     selectedCardId = null;
+    emulator.blur = 0;
+    emulator.applyFilter();
     const ordered = getCardOrder();
 
     filmCards.forEach(card => {
@@ -256,6 +258,8 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
   function animateFan() {
     cardState = 'fan';
     selectedCardId = null;
+    emulator.blur = BLUR_RADIUS;
+    emulator.applyFilter();
     const ordered = getCardOrder();
     const activeId = emulator.filmId;
     const fanPos = getFanPositions();
@@ -282,6 +286,8 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
   function animateSelected(clickedId) {
     cardState = 'selected';
     selectedCardId = clickedId;
+    emulator.blur = 0;
+    emulator.applyFilter();
 
     // Hide label during selection animation
     cardLabel.classList.remove('visible');
@@ -343,6 +349,12 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
         if (!isActive) setCardDim(card, true);
       });
     }
+  });
+
+  document.getElementById('ctrl-blur-speed').addEventListener('input', (e) => {
+    const v = parseFloat(e.target.value);
+    document.getElementById('val-blur-speed').textContent = v.toFixed(2);
+    contentRoot.style.transition = `filter ${v.toFixed(2)}s ease`;
   });
 
   /* ── Hover: idle ↔ fan ── */
