@@ -121,12 +121,20 @@
   height: 25px;
   transition: opacity 0.2s;
 }
+.island-clear {
+  color: #1E1E1E;
+  transition: color 0.2s;
+}
 .island-clear svg {
   transform: rotate(45deg);
-  opacity: 0.15;
-  transition: opacity 0.2s;
+  transition: transform 0.3s ease;
 }
-.island-clear:hover svg { opacity: 0.5; }
+.island-clear:hover {
+  color: #505050;
+}
+.island-clear:hover svg {
+  transform: rotate(135deg);
+}
 
 /* ── Expanded tray ── */
 .island-tray {

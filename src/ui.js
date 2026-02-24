@@ -36,11 +36,14 @@ function buildRollHTML(filmId) {
   return `<div class="island-roll" data-film="${filmId}"><img src="${src}" alt="${brand}" draggable="false"></div>`;
 }
 
-/* ── Clear film icon (split canister shape from Figma) ── */
-const CLEAR_FILM_SVG = `<svg width="18" height="17" viewBox="0 0 18 16.94" fill="white" xmlns="http://www.w3.org/2000/svg">
+/* ── Canister SVG paths (shared between clear button and no-film logo) ── */
+const CANISTER_PATHS = `
   <path d="M7 15.99C7 16.63 6.4 17.11 5.8 16.88C2.41 15.59 0 12.31 0 8.47C0 4.63 2.41 1.35 5.8 0.06C6.4-0.17 7 0.31 7 0.95V15.99Z"/>
-  <path d="M11 0.95C11 0.31 11.6-0.17 12.2 0.06C15.59 1.35 18 4.63 18 8.47C18 12.31 15.59 15.59 12.2 16.88C11.6 17.11 11 16.63 11 15.99V0.95Z"/>
-</svg>`;
+  <path d="M11 0.95C11 0.31 11.6-0.17 12.2 0.06C15.59 1.35 18 4.63 18 8.47C18 12.31 15.59 15.59 12.2 16.88C11.6 17.11 11 16.63 11 15.99V0.95Z"/>`;
+
+const CLEAR_FILM_SVG = `<svg width="18" height="17" viewBox="0 0 18 16.94" fill="currentColor" xmlns="http://www.w3.org/2000/svg">${CANISTER_PATHS}</svg>`;
+
+const NOFILM_LOGO_HTML = `<img src="/rolls/nofilm-icon.svg" width="17" height="17" draggable="false">`;
 
 /**
  * Build the sidebar + demo content DOM and wire controls to a FilmEmulator instance.
@@ -198,8 +201,9 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
       logo.style.display = '';
       LOGO_BUILDERS[brand](logo);
     } else {
-      logo.style.display = 'none';
-      logo.innerHTML = '';
+      logo.style.display = '';
+      logo.style.background = '#1E1E1E';
+      logo.innerHTML = `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">${NOFILM_LOGO_HTML}</div>`;
     }
 
     nameEl.textContent = stock.cardName.toUpperCase();
@@ -296,6 +300,11 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
     contentRoot.style.transition = `filter ${v.toFixed(2)}s ease`;
   });
 
+  /* ── Pill click: expand when collapsed ── */
+  pill.addEventListener('click', () => {
+    if (islandState === 'collapsed') expandIsland();
+  });
+
   /* ── Island hover: collapsed ↔ expanded ── */
   let leaveTimer = null;
 
@@ -332,9 +341,11 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
     });
   });
 
-  /* ── Aperture icon click: clear to "no film" ── */
+  /* ── Eject icon click: clear to "no film" + spin 360° CCW ── */
   clearBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    const svg = clearBtn.querySelector('svg');
+    animate(svg, { rotate: [45, 45 - 360] }, { duration: 0.5, easing: 'ease-out' });
     switchFilm('none');
   });
 
