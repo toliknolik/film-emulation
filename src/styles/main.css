@@ -54,7 +54,7 @@
 .status-dot { width: 5px; height: 5px; border-radius: 50%; background: #4a8; }
 .status-item { display: flex; align-items: center; gap: 6px; }
 
-/* ── STACKED CARD FILM SELECTOR ── */
+/* ── DYNAMIC ISLAND FILM SELECTOR ── */
 #film-card-selector {
   position: absolute;
   bottom: 44px;
@@ -63,70 +63,110 @@
   z-index: 60;
 }
 
-.card-label {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  margin-left: -50px;
-  margin-top: -50px;
-  width: 100px;
-  text-align: center;
-  font-family: 'DM Mono', monospace;
-  font-size: 14px;
-  letter-spacing: 1.12px;
-  text-transform: uppercase;
-  color: #c0c0c0;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 20;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  transform-origin: center center;
-}
-
-.card-label.visible {
-  opacity: 1;
-}
-
-.card-stack {
+.island {
   position: relative;
-  width: 300px;
-  height: 120px;
+  background: rgba(2, 2, 2, 0.9);
+  box-shadow: 0 24px 48px rgba(44, 44, 46, 0.08);
+  overflow: hidden;
+  cursor: pointer;
+  will-change: width, height, border-radius;
 }
 
-.card-stack::before {
+/* ── Collapsed pill ── */
+.island-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px 6px 12px;
+  white-space: nowrap;
+  height: 100%;
+}
+
+.island-pill-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 0 0;
+  min-width: 0;
+}
+
+.island-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.island-name {
+  font-family: 'Fragment Mono', 'DM Mono', monospace;
+  font-size: 12px;
+  color: #ffb301;
+  letter-spacing: 0.72px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.island-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 25px;
+  height: 25px;
+  transition: opacity 0.2s;
+}
+.island-clear svg {
+  transform: rotate(45deg);
+  opacity: 0.15;
+  transition: opacity 0.2s;
+}
+.island-clear:hover svg { opacity: 0.5; }
+
+/* ── Expanded tray ── */
+.island-tray {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.island-roll {
+  position: absolute;
+  width: 68px;
+  bottom: -24px;
+  cursor: pointer;
+  pointer-events: auto;
+  will-change: transform, opacity;
+  z-index: 1;
+}
+
+/* Roll positions */
+.island-roll:nth-child(1) { left: 27px; }
+.island-roll:nth-child(2) { left: 50%; margin-left: -34px; }
+.island-roll:nth-child(3) { right: 27px; }
+
+/* ── Film roll images ── */
+.island-roll img {
+  width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: none;
+}
+
+/* ── Expanded background glow ── */
+.island-tray::after {
   content: '';
   position: absolute;
+  bottom: 0;
   left: 50%;
-  top: 50%;
-  width: 400px;
-  height: 400px;
-  margin-left: -200px;
-  margin-top: 0;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.10);
-  filter: blur(104px);
+  transform: translateX(-50%);
+  width: 200px;
+  height: 80px;
+  background: radial-gradient(ellipse at center bottom, rgba(255,255,255,0.15) 0%, transparent 70%);
   pointer-events: none;
-  z-index: 0;
-}
-
-.film-card {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  margin-left: -50px;
-  margin-top: -50px;
-  width: 100px;
-  height: 100px;
-  border-radius: 17px;
-  background: white;
-  box-shadow: 0 0 4px rgba(0,0,0,0.04), 0 8px 16px rgba(0,0,0,0.08);
-  cursor: pointer;
-  will-change: transform;
-}
-
-.film-card-fill {
-  position: absolute;
-  inset: 4px;
-  border-radius: 13px;
 }

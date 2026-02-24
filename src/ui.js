@@ -1,41 +1,46 @@
 import STOCKS from './film-stocks.js';
 import { animate } from 'motion';
 
-/**
- * Generate a noise-textured card image as a data URL.
- * Draws the stock's gradient, then overlays fine monochrome noise.
- */
-function generateCardTexture(gradient, size = 232) {
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
+/* ── Film logo builders (24×24 CSS blocks for collapsed pill) ── */
+const LOGO_BUILDERS = {
+  fuji(el) {
+    el.style.background = '#fff';
+    el.innerHTML = `
+      <div style="position:absolute;left:0;top:0;width:12px;height:24px;background:#1d8232"></div>
+      <div style="position:absolute;left:12px;bottom:0;width:12px;height:8px;background:#9e30a6"></div>`;
+  },
+  kodak(el) {
+    el.style.background = '#fecf1c';
+    el.innerHTML = `
+      <div style="position:absolute;left:0;bottom:0;width:24px;height:14px;background:#be0082"></div>`;
+  },
+  ilford(el) {
+    el.style.background = '#fff';
+    el.innerHTML = `
+      <div style="position:absolute;bottom:0;left:0;width:24px;height:8px;background:#4d9cfa"></div>
+      <div style="position:absolute;bottom:10px;left:0;width:24px;height:2px;background:#4d9cfa"></div>
+      <div style="position:absolute;bottom:14px;left:0;width:24px;height:2px;background:#4d9cfa"></div>`;
+  },
+};
 
-  // Draw base gradient — parse the CSS gradient into a canvas gradient
-  // cardGradient format: "linear-gradient(236deg, #color1 4%, #color2 96%)"
-  const match = gradient.match(/#[0-9a-fA-F]{6}/g);
-  if (match && match.length >= 2) {
-    // 236deg ≈ bottom-left to top-right direction
-    const grad = ctx.createLinearGradient(size, 0, 0, size);
-    grad.addColorStop(0, match[0]);
-    grad.addColorStop(1, match[1]);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, size, size);
-  }
+/* ── Film roll image paths ── */
+const ROLL_IMAGES = {
+  fuji: '/rolls/roll-fuji.png',
+  kodak: '/rolls/roll-kodak.png',
+  ilford: '/rolls/roll-ilford.png',
+};
 
-  // Overlay fine noise
-  const imageData = ctx.getImageData(0, 0, size, size);
-  const data = imageData.data;
-  for (let i = 0; i < data.length; i += 4) {
-    const noise = (Math.random() - 0.5) * 40;
-    data[i]     = Math.min(255, Math.max(0, data[i] + noise));
-    data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + noise));
-    data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + noise));
-  }
-  ctx.putImageData(imageData, 0, 0);
-
-  return canvas.toDataURL('image/png');
+function buildRollHTML(filmId) {
+  const brand = STOCKS[filmId].brand;
+  const src = ROLL_IMAGES[brand] || '';
+  return `<div class="island-roll" data-film="${filmId}"><img src="${src}" alt="${brand}" draggable="false"></div>`;
 }
+
+/* ── Clear film icon (split canister shape from Figma) ── */
+const CLEAR_FILM_SVG = `<svg width="18" height="17" viewBox="0 0 18 16.94" fill="white" xmlns="http://www.w3.org/2000/svg">
+  <path d="M7 15.99C7 16.63 6.4 17.11 5.8 16.88C2.41 15.59 0 12.31 0 8.47C0 4.63 2.41 1.35 5.8 0.06C6.4-0.17 7 0.31 7 0.95V15.99Z"/>
+  <path d="M11 0.95C11 0.31 11.6-0.17 12.2 0.06C15.59 1.35 18 4.63 18 8.47C18 12.31 15.59 15.59 12.2 16.88C11.6 17.11 11 16.63 11 15.99V0.95Z"/>
+</svg>`;
 
 /**
  * Build the sidebar + demo content DOM and wire controls to a FilmEmulator instance.
@@ -44,7 +49,7 @@ function generateCardTexture(gradient, size = 232) {
  * @param {HTMLElement}  sidebarRoot     – container that will hold sidebar markup
  * @param {HTMLElement}  contentRoot     – the #content div (also the grade target)
  * @param {HTMLElement}  statusTextEl    – element for film name in the status bar
- * @param {HTMLElement}  cardSelectorEl  – container for stacked card film selector
+ * @param {HTMLElement}  cardSelectorEl  – container for the dynamic island selector
  */
 export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSelectorEl) {
   /* ── Sidebar HTML ──────────────────────────────────────────── */
@@ -94,14 +99,6 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
         <input type="range" id="ctrl-bounce" min="0" max="0.5" step="0.01" value="0.15">
       </div>
       <div class="control-row">
-        <div class="control-label">Fan Spread <span id="val-spread">80</span></div>
-        <input type="range" id="ctrl-spread" min="40" max="200" step="5" value="80">
-      </div>
-      <div class="control-row">
-        <div class="control-label">Brightness <span id="val-dim">0.00</span></div>
-        <input type="range" id="ctrl-dim" min="-1" max="1" step="0.05" value="0.00">
-      </div>
-      <div class="control-row">
         <div class="control-label">Blur Speed <span id="val-blur-speed">0.35</span></div>
         <input type="range" id="ctrl-blur-speed" min="0.1" max="1.5" step="0.05" value="0.35">
       </div>
@@ -121,7 +118,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
     </p>
   `;
 
-  /* ── Wire film buttons (wired after card selector sets up switchFilm) ── */
+  /* ── Wire film buttons (wired after island sets up switchFilm) ── */
   const filmBtns = sidebarRoot.querySelectorAll('.film-btn');
 
   /* ── Wire sliders ──────────────────────────────────────────── */
@@ -155,161 +152,120 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
     }
   }
 
-  /* ── Stacked card film selector ──────────────────────────────── */
-  const cardStockIds = Object.keys(STOCKS).filter(id => id !== 'none');
+  /* ── Dynamic island film selector ────────────────────────────── */
+  const rollStockIds = Object.keys(STOCKS).filter(id => id !== 'none');
   const spring = { type: 'spring', visualDuration: 0.4, bounce: 0.15 };
+  const BLUR_RADIUS = 12;
 
-  // Mutable fan params — updated by animation sliders
-  const fanParams = { spread: 80, brightness: 0 };
+  // Pill dimensions (for morphing animation)
+  const PILL_W = 200;
+  const PILL_H = 36;
+  const EXPANDED_W = 274;
+  const EXPANDED_H = 103;
 
-  // Label sits above card: label height (~19) + 10px gap (per Figma)
-  const LABEL_Y_OFFSET = -29;
-  const BLUR_RADIUS = 12; // px — content blur when cards are fanned
-
-  // Idle: flat stack with rotateZ tilts, active on top
-  const idlePositions = [
-    { x: 0, y: 0, rotateZ: -3, scale: 1 },
-    { x: 0, y: 0, rotateZ: 3,  scale: 1 },
-    { x: 0, y: 0, rotateZ: 0,  scale: 1 },
-  ];
-
-  // Fan: flat horizontal spread — side cards tucked behind center
-  function getFanPositions() {
-    const s = fanParams.spread;
-    return [
-      { x: -s, y: 0, rotateZ: -6, scale: 1 },
-      { x: 0,  y: 0, rotateZ: 0,  scale: 1 },
-      { x: s,  y: 0, rotateZ: 6,  scale: 1 },
-    ];
-  }
-
-  // Individual card hover lift within fan
-  function getFanHoverLifts() {
-    const s = fanParams.spread;
-    return [
-      { x: -s, y: -40, rotateZ: -6, scale: 1 },
-      { x: 0,  y: -40, rotateZ: 0,  scale: 1 },
-      { x: s,  y: -40, rotateZ: 6,  scale: 1 },
-    ];
-  }
-
-  // Pre-generate noise textures for each card
-  const cardTextures = {};
-  for (const id of cardStockIds) {
-    cardTextures[id] = generateCardTexture(STOCKS[id].cardGradient);
-  }
-
+  // Build island HTML
   cardSelectorEl.innerHTML = `
-    <div class="card-stack">
-      <span class="card-label"></span>
-      ${cardStockIds.map(id => {
-        return `<div class="film-card" data-film="${id}"><div class="film-card-fill" style="background:url(${cardTextures[id]}) center/cover"></div></div>`;
-      }).join('')}
+    <div class="island">
+      <div class="island-pill">
+        <div class="island-pill-content">
+          <div class="island-logo"></div>
+          <span class="island-name"></span>
+        </div>
+        <button class="island-clear" aria-label="Clear film">${CLEAR_FILM_SVG}</button>
+      </div>
+      <div class="island-tray">
+        ${rollStockIds.map(id => buildRollHTML(id)).join('')}
+      </div>
     </div>
   `;
 
-  const cardLabel = cardSelectorEl.querySelector('.card-label');
-  const cardStackEl = cardSelectorEl.querySelector('.card-stack');
-  const filmCards = [...cardSelectorEl.querySelectorAll('.film-card')];
+  const island = cardSelectorEl.querySelector('.island');
+  const pill = island.querySelector('.island-pill');
+  const logo = island.querySelector('.island-logo');
+  const nameEl = island.querySelector('.island-name');
+  const clearBtn = island.querySelector('.island-clear');
+  const tray = island.querySelector('.island-tray');
+  const rolls = [...island.querySelectorAll('.island-roll')];
 
-  // State: 'idle' | 'fan' | 'selected'
-  let cardState = 'idle';
-  let selectedCardId = null;
+  let islandState = 'collapsed'; // 'collapsed' | 'expanded'
 
-  /** Get ordered array: active card last (on top). */
-  function getCardOrder() {
-    const activeId = emulator.filmId;
-    const ordered = cardStockIds.filter(id => id !== activeId);
-    if (cardStockIds.includes(activeId)) {
-      ordered.push(activeId);
+  /** Update the pill to reflect the current film. */
+  function updatePill() {
+    const stock = emulator.stock;
+    const brand = stock.brand;
+
+    if (brand && LOGO_BUILDERS[brand]) {
+      logo.style.display = '';
+      LOGO_BUILDERS[brand](logo);
     } else {
-      ordered.push(cardStockIds[0]);
+      logo.style.display = 'none';
+      logo.innerHTML = '';
     }
-    return ordered;
+
+    nameEl.textContent = stock.cardName.toUpperCase();
   }
 
-  /** Apply dimming to non-active cards via CSS filter. */
-  function setCardDim(card, dimmed) {
-    card.style.filter = dimmed ? `brightness(${1 + fanParams.brightness}) saturate(0.5)` : '';
-  }
+  /** Expand the island — show film rolls. */
+  function expandIsland() {
+    if (islandState === 'expanded') return;
+    islandState = 'expanded';
 
-  /** Animate cards to idle stack position. */
-  function animateIdle() {
-    cardState = 'idle';
-    selectedCardId = null;
-    emulator.blur = 0;
-    emulator.applyFilter();
-    const ordered = getCardOrder();
-
-    filmCards.forEach(card => {
-      const id = card.dataset.film;
-      const idx = ordered.indexOf(id);
-      card.style.zIndex = idx + 1;
-      setCardDim(card, false);
-      animate(card, idlePositions[idx], spring);
-    });
-
-    // Hide label in idle
-    cardLabel.classList.remove('visible');
-    animate(cardLabel, { x: 0, y: LABEL_Y_OFFSET, rotateZ: 0 }, spring);
-  }
-
-  /** Animate cards to flat fan spread. */
-  function animateFan() {
-    cardState = 'fan';
-    selectedCardId = null;
+    // Blur page content
     emulator.blur = BLUR_RADIUS;
     emulator.applyFilter();
-    const ordered = getCardOrder();
-    const activeId = emulator.filmId;
-    const fanPos = getFanPositions();
 
-    filmCards.forEach(card => {
-      const id = card.dataset.film;
-      const idx = ordered.indexOf(id);
-      const isActive = id === activeId;
-      card.style.zIndex = idx + 1;
-      setCardDim(card, !isActive);
-      animate(card, fanPos[idx], spring);
+    // Morph container
+    animate(island, {
+      width: `${EXPANDED_W}px`,
+      height: `${EXPANDED_H}px`,
+      borderRadius: '32px',
+    }, spring);
+
+    // Fade out pill content
+    animate(pill, { opacity: 0 }, { duration: 0.15 });
+
+    // Show tray
+    tray.style.display = 'block';
+
+    // Animate rolls in (staggered from below)
+    rolls.forEach((roll, i) => {
+      animate(roll, { y: 0, opacity: 1 }, {
+        ...spring,
+        delay: i * 0.04,
+      });
     });
-
-    // Show active film name above the active card's position
-    const displayId = cardStockIds.includes(activeId) ? activeId : cardStockIds[0];
-    const activeIdx = ordered.indexOf(displayId);
-    const pos = fanPos[activeIdx] ?? { x: 0, y: 0, rotateZ: 0 };
-    cardLabel.textContent = STOCKS[displayId].cardName.toUpperCase();
-    cardLabel.classList.add('visible');
-    animate(cardLabel, { x: pos.x, y: pos.y + LABEL_Y_OFFSET, rotateZ: pos.rotateZ }, spring);
   }
 
-  /** Animate to selected state: clicked card pops then returns to idle. */
-  function animateSelected(clickedId) {
-    cardState = 'selected';
-    selectedCardId = clickedId;
+  /** Collapse the island — hide rolls, show pill. */
+  function collapseIsland() {
+    if (islandState === 'collapsed') return;
+    islandState = 'collapsed';
+
+    // Unblur page content
     emulator.blur = 0;
     emulator.applyFilter();
 
-    // Hide label during selection animation
-    cardLabel.classList.remove('visible');
-    animate(cardLabel, { x: 0, y: LABEL_Y_OFFSET, rotateZ: 0 }, spring);
-
-    filmCards.forEach(card => {
-      const id = card.dataset.film;
-      if (id === clickedId) {
-        card.style.zIndex = 10;
-        setCardDim(card, false);
-      } else {
-        card.style.zIndex = 1;
-        setCardDim(card, true);
-      }
-      animate(card, { x: 0, y: 0, rotateZ: 0, scale: 1 }, spring);
+    // Animate rolls out
+    rolls.forEach((roll, i) => {
+      animate(roll, { y: 20, opacity: 0 }, { duration: 0.15, delay: i * 0.02 });
     });
 
-    // Settle: return to idle stack after the pop
+    // Morph container back to pill
+    animate(island, {
+      width: `${PILL_W}px`,
+      height: `${PILL_H}px`,
+      borderRadius: '70px',
+    }, spring);
+
+    // Fade in pill content
+    animate(pill, { opacity: 1 }, { ...spring, delay: 0.1 });
+
+    // Hide tray after animation
     setTimeout(() => {
-      if (cardState !== 'selected' || selectedCardId !== clickedId) return;
-      animateIdle();
-    }, 500);
+      if (islandState === 'collapsed') {
+        tray.style.display = 'none';
+      }
+    }, 400);
   }
 
   function switchFilm(filmId) {
@@ -320,6 +276,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
     statusTextEl.textContent = emulator.stock.name;
     applyStockDefaults();
     emulator.apply();
+    updatePill();
   }
 
   /* ── Wire animation sliders ───────────────────────────────── */
@@ -333,114 +290,76 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
     document.getElementById('val-bounce').textContent = spring.bounce.toFixed(2);
   });
 
-  document.getElementById('ctrl-spread').addEventListener('input', (e) => {
-    fanParams.spread = parseFloat(e.target.value);
-    document.getElementById('val-spread').textContent = fanParams.spread.toFixed(0);
-    if (cardState === 'fan') animateFan();
-  });
-
-  document.getElementById('ctrl-dim').addEventListener('input', (e) => {
-    fanParams.brightness = parseFloat(e.target.value);
-    document.getElementById('val-dim').textContent = fanParams.brightness.toFixed(2);
-    // Re-apply dimming to currently dimmed cards in fan state
-    if (cardState === 'fan') {
-      filmCards.forEach(card => {
-        const isActive = card.dataset.film === emulator.filmId;
-        if (!isActive) setCardDim(card, true);
-      });
-    }
-  });
-
   document.getElementById('ctrl-blur-speed').addEventListener('input', (e) => {
     const v = parseFloat(e.target.value);
     document.getElementById('val-blur-speed').textContent = v.toFixed(2);
     contentRoot.style.transition = `filter ${v.toFixed(2)}s ease`;
   });
 
-  /* ── Hover: idle ↔ fan ── */
+  /* ── Island hover: collapsed ↔ expanded ── */
   let leaveTimer = null;
-  cardStackEl.addEventListener('mouseenter', () => {
+
+  island.addEventListener('mouseenter', () => {
     if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
-    if (cardState === 'idle') animateFan();
+    if (islandState === 'collapsed') expandIsland();
   });
 
-  cardStackEl.addEventListener('mouseleave', () => {
-    if (cardState === 'fan') {
-      leaveTimer = setTimeout(() => { leaveTimer = null; animateIdle(); }, 60);
+  island.addEventListener('mouseleave', () => {
+    if (islandState === 'expanded') {
+      leaveTimer = setTimeout(() => { leaveTimer = null; collapseIsland(); }, 60);
     }
   });
 
-  /* ── Individual card hover within fan — elevate card + label follows ── */
-  filmCards.forEach(card => {
-    card.addEventListener('mouseenter', () => {
-      if (cardState !== 'fan') return;
-      const id = card.dataset.film;
-      const ordered = getCardOrder();
-      const idx = ordered.indexOf(id);
-      const hoverPos = getFanHoverLifts()[idx];
-      // Elevate hovered card
-      animate(card, hoverPos, spring);
-      // Move label above hovered card
-      cardLabel.textContent = STOCKS[id].cardName.toUpperCase();
-      animate(cardLabel, { x: hoverPos.x, y: hoverPos.y + LABEL_Y_OFFSET, rotateZ: hoverPos.rotateZ }, spring);
+  /* ── Individual roll hover: lift 10px ── */
+  rolls.forEach(roll => {
+    roll.addEventListener('mouseenter', () => {
+      if (islandState !== 'expanded') return;
+      animate(roll, { y: -10 }, spring);
     });
-
-    card.addEventListener('mouseleave', () => {
-      if (cardState !== 'fan') return;
-      const ordered = getCardOrder();
-      const idx = ordered.indexOf(card.dataset.film);
-      const fanPos = getFanPositions();
-      // Return card to fan position
-      animate(card, fanPos[idx], spring);
-      // Restore label to active card's position
-      const activeId = emulator.filmId;
-      const displayId = cardStockIds.includes(activeId) ? activeId : cardStockIds[0];
-      const activeIdx = ordered.indexOf(displayId);
-      const ap = fanPos[activeIdx] ?? { x: 0, y: 0, rotateZ: 0 };
-      cardLabel.textContent = STOCKS[displayId].cardName.toUpperCase();
-      animate(cardLabel, { x: ap.x, y: ap.y + LABEL_Y_OFFSET, rotateZ: ap.rotateZ }, spring);
+    roll.addEventListener('mouseleave', () => {
+      if (islandState !== 'expanded') return;
+      animate(roll, { y: 0 }, spring);
     });
   });
 
-  /* ── Card clicks ── */
-  filmCards.forEach(card => {
-    card.addEventListener('click', (e) => {
+  /* ── Roll clicks: select film + collapse ── */
+  rolls.forEach(roll => {
+    roll.addEventListener('click', (e) => {
       e.stopPropagation();
-      const id = card.dataset.film;
-
-      if (cardState === 'fan') {
-        switchFilm(id);
-        animateSelected(id);
-      } else if (cardState === 'selected') {
-        if (id === selectedCardId) {
-          animateFan();
-        } else {
-          switchFilm(id);
-          animateSelected(id);
-        }
-      } else {
-        switchFilm(id);
-      }
+      const filmId = roll.dataset.film;
+      switchFilm(filmId);
+      collapseIsland();
     });
   });
 
-  /* ── Click outside to dismiss selected state ── */
-  document.addEventListener('click', (e) => {
-    if (cardState === 'selected' && !cardSelectorEl.contains(e.target)) {
-      animateIdle();
-    }
+  /* ── Aperture icon click: clear to "no film" ── */
+  clearBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    switchFilm('none');
   });
 
-  // Sidebar buttons sync + reset card stack
+  /* ── Sidebar film buttons sync ── */
   filmBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       switchFilm(btn.dataset.film);
-      animateIdle();
+      if (islandState === 'expanded') collapseIsland();
     });
   });
 
-  /* ── Set initial defaults + status ───────────────────────────── */
+  /* ── Initialize ── */
+  // Set initial pill size
+  island.style.width = `${PILL_W}px`;
+  island.style.height = `${PILL_H}px`;
+  island.style.borderRadius = '70px';
+
+  // Set rolls to hidden initial state
+  tray.style.display = 'none';
+  rolls.forEach(roll => {
+    roll.style.transform = 'translateY(20px)';
+    roll.style.opacity = '0';
+  });
+
+  updatePill();
   applyStockDefaults();
-  animateIdle();
   statusTextEl.textContent = emulator.stock.name;
 }
