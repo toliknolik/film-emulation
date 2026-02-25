@@ -19,6 +19,25 @@
   align-items: center;
 }
 
+/* ── FOCUSING SCREEN — overlay during blur ── */
+.focusing-screen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  will-change: opacity;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.focusing-screen img {
+  width: 60%;
+  aspect-ratio: 1040 / 444;
+}
+
 /* ── GRAIN CANVAS — pure overlay, click-through ── */
 #grain-canvas {
   position: absolute;
@@ -122,7 +141,7 @@
   transition: opacity 0.2s;
 }
 .island-clear {
-  color: #1E1E1E;
+  color: #505050;
   transition: color 0.2s;
 }
 .island-clear svg {
@@ -130,7 +149,7 @@
   transition: transform 0.3s ease;
 }
 .island-clear:hover {
-  color: #505050;
+  color: #707070;
 }
 .island-clear:hover svg {
   transform: rotate(135deg);

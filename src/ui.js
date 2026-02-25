@@ -121,6 +121,12 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
     </p>
   `;
 
+  /* ── Focusing screen overlay (shown during blur) ── */
+  const focusingScreen = document.createElement('div');
+  focusingScreen.className = 'focusing-screen';
+  focusingScreen.innerHTML = '<img src="/focusing-screen.svg" alt="" draggable="false">';
+  contentRoot.parentElement.insertBefore(focusingScreen, contentRoot.nextSibling);
+
   /* ── Wire film buttons (wired after island sets up switchFilm) ── */
   const filmBtns = sidebarRoot.querySelectorAll('.film-btn');
 
@@ -214,9 +220,10 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
     if (islandState === 'expanded') return;
     islandState = 'expanded';
 
-    // Blur page content
+    // Blur page content + show focusing screen
     emulator.blur = BLUR_RADIUS;
     emulator.applyFilter();
+    focusingScreen.style.opacity = '1';
 
     // Morph container
     animate(island, {
@@ -245,9 +252,10 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
     if (islandState === 'collapsed') return;
     islandState = 'collapsed';
 
-    // Unblur page content
+    // Unblur page content + hide focusing screen
     emulator.blur = 0;
     emulator.applyFilter();
+    focusingScreen.style.opacity = '0';
 
     // Animate rolls out
     rolls.forEach((roll, i) => {
