@@ -26,9 +26,9 @@
   pointer-events: none;
   mix-blend-mode: overlay;
   opacity: 0;
-  transition: opacity 0.35s ease;
-  will-change: opacity;
-  z-index: 1;
+  backdrop-filter: blur(0px);
+  transition: opacity 0.35s ease, backdrop-filter 0.4s ease;
+  will-change: opacity, backdrop-filter;
   display: flex;
   align-items: center;
   justify-content: center;

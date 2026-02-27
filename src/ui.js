@@ -66,11 +66,8 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
     <div class="film-list">
       ${Object.entries(STOCKS).map(([id, s]) => `
         <button class="film-btn${id === emulator.filmId ? ' active' : ''}" data-film="${id}">
-          <div class="film-swatch swatch-${s.swatch}"></div>
-          <div class="film-btn-info">
-            <span class="film-btn-name">${s.name}</span>
-            <span class="film-btn-desc">${s.description}</span>
-          </div>
+          <span class="film-btn-name">${s.cardName}</span>
+          <span class="film-btn-desc">${s.description}</span>
         </button>
       `).join('')}
     </div>
@@ -91,7 +88,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
       </div>
     </div>
 
-    <div class="section-label">Animation</div>
+    <div class="section-label">Spring</div>
     <div class="controls">
       <div class="control-row">
         <div class="control-label">Duration <span id="val-duration">0.40</span></div>
@@ -101,9 +98,32 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
         <div class="control-label">Bounce <span id="val-bounce">0.15</span></div>
         <input type="range" id="ctrl-bounce" min="0" max="0.5" step="0.01" value="0.15">
       </div>
+    </div>
+
+    <div class="section-label">Blur</div>
+    <div class="controls">
       <div class="control-row">
-        <div class="control-label">Blur Speed <span id="val-blur-speed">0.35</span></div>
-        <input type="range" id="ctrl-blur-speed" min="0.1" max="1.5" step="0.05" value="0.35">
+        <div class="control-label">Speed <span id="val-blur-speed">0.35</span>s</div>
+        <input type="range" id="ctrl-blur-speed" min="0.05" max="1.5" step="0.05" value="0.35">
+      </div>
+      <div class="control-row">
+        <div class="control-label">Radius <span id="val-blur-radius">12</span>px</div>
+        <input type="range" id="ctrl-blur-radius" min="1" max="30" step="1" value="12">
+      </div>
+      <div class="control-row">
+        <div class="control-label">Easing</div>
+        <select id="ctrl-blur-easing">
+          <option value="ease">ease</option>
+          <option value="ease-out">ease-out</option>
+          <option value="ease-in-out">ease-in-out</option>
+          <option value="linear">linear</option>
+        </select>
+      </div>
+      <div class="control-row">
+        <svg id="easing-graph" viewBox="0 0 1 1" preserveAspectRatio="none">
+          <line class="eg-diag" x1="0" y1="1" x2="1" y2="0" />
+          <path id="easing-curve" d="" />
+        </svg>
       </div>
     </div>
   `;
@@ -126,6 +146,16 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
   focusingScreen.className = 'focusing-screen';
   focusingScreen.innerHTML = '<img src="/focusing-screen.svg" alt="" draggable="false">';
   contentRoot.parentElement.insertBefore(focusingScreen, contentRoot.nextSibling);
+
+  /* ── Sound effects (native Audio API) ── */
+  const sfx = {
+    unfocus: Object.assign(new Audio('/sounds/unfocus.mp3'), { volume: 0.3 }),
+    tick:    Object.assign(new Audio('/sounds/tick.mp3'),    { volume: 0.15 }),
+  };
+  function playSfx(sound) {
+    sound.currentTime = 0;
+    sound.play().catch(() => {});
+  }
 
   /* ── Wire film buttons (wired after island sets up switchFilm) ── */
   const filmBtns = sidebarRoot.querySelectorAll('.film-btn');
@@ -164,7 +194,9 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
   /* ── Dynamic island film selector ────────────────────────────── */
   const rollStockIds = Object.keys(STOCKS).filter(id => id !== 'none');
   const spring = { type: 'spring', visualDuration: 0.4, bounce: 0.15 };
-  const BLUR_RADIUS = 12;
+  let blurRadius = 12;            // px      — controlled by Radius slider
+  let blurSpeed = 0.35;           // seconds — controlled by Speed slider
+  let blurEasing = 'ease';        // CSS easing — controlled by Easing dropdown
 
   // Pill dimensions (for morphing animation)
   const PILL_W = 200;
@@ -196,7 +228,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
   const tray = island.querySelector('.island-tray');
   const rolls = [...island.querySelectorAll('.island-roll')];
 
-  let islandState = 'collapsed'; // 'collapsed' | 'expanded'
+  let islandState = 'collapsed'; // 'collapsed' | 'collapsing' | 'expanded'
 
   /** Update the pill to reflect the current film. */
   function updatePill() {
@@ -217,12 +249,15 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
 
   /** Expand the island — show film rolls. */
   function expandIsland() {
-    if (islandState === 'expanded') return;
+    if (islandState !== 'collapsed') return;
     islandState = 'expanded';
 
-    // Blur page content + show focusing screen
-    emulator.blur = BLUR_RADIUS;
-    emulator.applyFilter();
+    playSfx(sfx.unfocus);
+
+    // Blur-in: speed + easing from sidebar controls
+    focusingScreen.style.transition =
+      `opacity ${blurSpeed}s ${blurEasing}, backdrop-filter ${blurSpeed}s ${blurEasing}`;
+    focusingScreen.style.backdropFilter = `blur(${blurRadius}px)`;
     focusingScreen.style.opacity = '1';
 
     // Morph container
@@ -249,13 +284,12 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
 
   /** Collapse the island — hide rolls, show pill. */
   function collapseIsland() {
-    if (islandState === 'collapsed') return;
-    islandState = 'collapsed';
+    if (islandState !== 'expanded') return;
+    islandState = 'collapsing';
 
-    // Unblur page content + hide focusing screen
-    emulator.blur = 0;
-    emulator.applyFilter();
+    // Un-blur (reuses the transition timing set by expandIsland)
     focusingScreen.style.opacity = '0';
+    focusingScreen.style.backdropFilter = 'blur(0px)';
 
     // Animate rolls out
     rolls.forEach((roll, i) => {
@@ -274,10 +308,11 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
 
     // Hide tray after animation
     setTimeout(() => {
-      if (islandState === 'collapsed') {
+      if (islandState === 'collapsing') {
+        islandState = 'collapsed';
         tray.style.display = 'none';
       }
-    }, 400);
+    }, spring.visualDuration * 1000 + 50);
   }
 
   function switchFilm(filmId) {
@@ -305,8 +340,37 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
   document.getElementById('ctrl-blur-speed').addEventListener('input', (e) => {
     const v = parseFloat(e.target.value);
     document.getElementById('val-blur-speed').textContent = v.toFixed(2);
-    contentRoot.style.transition = `filter ${v.toFixed(2)}s ease`;
+    blurSpeed = v;
   });
+
+  document.getElementById('ctrl-blur-radius').addEventListener('input', (e) => {
+    blurRadius = parseInt(e.target.value, 10);
+    document.getElementById('val-blur-radius').textContent = blurRadius;
+  });
+
+  /* ── Easing curve graph ── */
+  const EASING_CURVES = {
+    'ease':        [0.25, 0.1,  0.25, 1.0],
+    'ease-out':    [0,    0,    0.58, 1.0],
+    'ease-in-out': [0.42, 0,    0.58, 1.0],
+    'linear':      [0,    0,    1,    1],
+  };
+
+  const easingCurvePath = document.getElementById('easing-curve');
+
+  function drawEasingGraph(name) {
+    const [x1, y1, x2, y2] = EASING_CURVES[name] || EASING_CURVES['ease'];
+    // SVG viewBox is 0 0 1 1; y is flipped (0=top, 1=bottom)
+    easingCurvePath.setAttribute('d',
+      `M 0 1 C ${x1} ${1 - y1} ${x2} ${1 - y2} 1 0`);
+  }
+
+  document.getElementById('ctrl-blur-easing').addEventListener('change', (e) => {
+    blurEasing = e.target.value;
+    drawEasingGraph(blurEasing);
+  });
+
+  drawEasingGraph(blurEasing);          // initial draw
 
   /* ── Pill click: expand when collapsed ── */
   pill.addEventListener('click', () => {
@@ -315,13 +379,15 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
 
   /* ── Island hover: collapsed ↔ expanded ── */
   let leaveTimer = null;
+  let suppressHover = false;       // true after roll/eject click until mouse leaves
 
   island.addEventListener('mouseenter', () => {
     if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
-    if (islandState === 'collapsed') expandIsland();
+    if (!suppressHover && islandState === 'collapsed') expandIsland();
   });
 
   island.addEventListener('mouseleave', () => {
+    suppressHover = false;
     if (islandState === 'expanded') {
       leaveTimer = setTimeout(() => { leaveTimer = null; collapseIsland(); }, 60);
     }
@@ -331,6 +397,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
   rolls.forEach(roll => {
     roll.addEventListener('mouseenter', () => {
       if (islandState !== 'expanded') return;
+      playSfx(sfx.tick);
       animate(roll, { y: -10 }, spring);
     });
     roll.addEventListener('mouseleave', () => {
@@ -344,6 +411,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
     roll.addEventListener('click', (e) => {
       e.stopPropagation();
       const filmId = roll.dataset.film;
+      suppressHover = true;
       switchFilm(filmId);
       collapseIsland();
     });
@@ -353,6 +421,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
   clearBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const svg = clearBtn.querySelector('svg');
+    suppressHover = true;
     animate(svg, { rotate: [45, 45 - 360] }, { duration: 0.5, easing: 'ease-out' });
     switchFilm('none');
   });

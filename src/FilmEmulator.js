@@ -172,6 +172,6 @@ export default class FilmEmulator {
   _applyGrade() {
     const stock = this.stock;
     const filter = stock.buildCSSFilter(this._grade);
-    this._content.style.filter = filter + ` blur(${this._blur.toFixed(1)}px)`;
+    this._content.style.filter = filter;
   }
 }
