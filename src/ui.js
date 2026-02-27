@@ -151,6 +151,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
   const sfx = {
     unfocus: Object.assign(new Audio('/sounds/unfocus.mp3'), { volume: 0.25 }),
     tick:    Object.assign(new Audio('/sounds/tick.mp3'),    { volume: 0.5 }),
+    eject:   Object.assign(new Audio('/sounds/eject.mp3'),   { volume: 0.4 }),
   };
   function playSfx(sound) {
     sound.currentTime = 0;
@@ -383,9 +384,13 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
   let leaveTimer = null;
   let suppressHover = false;       // true after roll/eject click until mouse leaves
 
-  island.addEventListener('mouseenter', () => {
+  island.addEventListener('mouseenter', (e) => {
     if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
-    if (!suppressHover && islandState === 'collapsed') expandIsland();
+    if (suppressHover || islandState !== 'collapsed') return;
+    // Don't expand when cursor enters over the eject button
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    if (el && clearBtn.contains(el)) return;
+    expandIsland();
   });
 
   island.addEventListener('mouseleave', () => {
@@ -425,6 +430,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
     e.stopPropagation();
     const svg = clearBtn.querySelector('svg');
     suppressHover = true;
+    playSfx(sfx.eject);
     animate(svg, { rotate: [45, 45 - 360] }, { duration: 0.5, easing: 'ease-out' });
     switchFilm('none');
   });
