@@ -63,9 +63,9 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
   }
 
   const FAVICON_LOGOS = {
-    fuji:   { bg: '#fff',    blocks: [{ x:0, y:0, w:16, h:32, fill:'#1d8232' }, { x:16, y:24, w:16, h:8, fill:'#9e30a6' }] },
-    kodak:  { bg: '#fecf1c', blocks: [{ x:0, y:18, w:32, h:14, fill:'#be0082' }] },
-    ilford: { bg: '#fff',    blocks: [{ x:0, y:24, w:32, h:8, fill:'#4d9cfa' }, { x:0, y:12, w:32, h:3, fill:'#4d9cfa' }, { x:0, y:7, w:32, h:3, fill:'#4d9cfa' }] },
+    fuji:   { bg: '#fff',    blocks: [{ x:0, y:0, w:16, h:32, fill:'#1d8232' }, { x:16, y:21, w:16, h:11, fill:'#9e30a6' }] },
+    kodak:  { bg: '#fecf1c', blocks: [{ x:0, y:13, w:32, h:19, fill:'#be0082' }] },
+    ilford: { bg: '#fff',    blocks: [{ x:0, y:21, w:32, h:11, fill:'#4d9cfa' }, { x:0, y:16, w:32, h:3, fill:'#4d9cfa' }, { x:0, y:10, w:32, h:3, fill:'#4d9cfa' }] },
   };
 
   function updateFavicon(brand) {
