@@ -54,6 +54,40 @@ const NOFILM_LOGO_HTML = `<img src="/rolls/nofilm-icon.svg" width="17" height="1
  * @param {HTMLElement}  cardSelectorEl  – container for the dynamic island selector
  */
 export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
+  /* ── Dynamic favicon (renders island logo to canvas) ── */
+  let faviconLink = document.querySelector("link[rel='icon']");
+  if (!faviconLink) {
+    faviconLink = document.createElement('link');
+    faviconLink.rel = 'icon';
+    document.head.appendChild(faviconLink);
+  }
+
+  const FAVICON_LOGOS = {
+    fuji:   { bg: '#fff',    blocks: [{ x:0, y:0, w:16, h:32, fill:'#1d8232' }, { x:16, y:24, w:16, h:8, fill:'#9e30a6' }] },
+    kodak:  { bg: '#fecf1c', blocks: [{ x:0, y:18, w:32, h:14, fill:'#be0082' }] },
+    ilford: { bg: '#fff',    blocks: [{ x:0, y:24, w:32, h:8, fill:'#4d9cfa' }, { x:0, y:12, w:32, h:3, fill:'#4d9cfa' }, { x:0, y:7, w:32, h:3, fill:'#4d9cfa' }] },
+  };
+
+  function updateFavicon(brand) {
+    const logo = FAVICON_LOGOS[brand];
+    if (!logo) { faviconLink.href = '/rolls/nofilm-icon.svg'; return; }
+    const s = 32;
+    const c = document.createElement('canvas');
+    c.width = s; c.height = s;
+    const ctx = c.getContext('2d');
+    // Rounded rect background
+    const r = 6;
+    ctx.beginPath();
+    ctx.roundRect(0, 0, s, s, r);
+    ctx.fillStyle = logo.bg;
+    ctx.fill();
+    ctx.clip();
+    for (const b of logo.blocks) {
+      ctx.fillStyle = b.fill;
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+    }
+    faviconLink.href = c.toDataURL('image/png');
+  }
   /* ── Sidebar HTML ──────────────────────────────────────────── */
   sidebarRoot.innerHTML = `
     <div class="sidebar-header">
@@ -143,8 +177,12 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
   /* ── Focusing screen overlay (shown during blur) ── */
   const focusingScreen = document.createElement('div');
   focusingScreen.className = 'focusing-screen';
-  focusingScreen.innerHTML = '<img src="/focusing-screen.svg" alt="" draggable="false">';
   contentRoot.parentElement.insertBefore(focusingScreen, contentRoot.nextSibling);
+
+  const focusingOverlay = document.createElement('div');
+  focusingOverlay.className = 'focusing-overlay';
+  focusingOverlay.innerHTML = '<img src="/focusing-screen.svg" alt="" draggable="false">';
+  contentRoot.parentElement.insertBefore(focusingOverlay, focusingScreen.nextSibling);
 
   /* ── Sound effects (native Audio API) ── */
   const sfx = {
@@ -246,6 +284,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     }
 
     nameEl.textContent = stock.cardName.toUpperCase();
+    updateFavicon(brand);
   }
 
   /** Expand the island — show film rolls. */
@@ -258,9 +297,12 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
 
     // Blur-in: speed + easing from sidebar controls
     focusingScreen.style.transition =
-      `opacity ${blurSpeed}s ${blurEasing}, backdrop-filter ${blurSpeed}s ${blurEasing}`;
+      `opacity ${blurSpeed}s ${blurEasing}, -webkit-backdrop-filter ${blurSpeed}s ${blurEasing}, backdrop-filter ${blurSpeed}s ${blurEasing}`;
+    focusingScreen.style.webkitBackdropFilter = `blur(${blurRadius}px)`;
     focusingScreen.style.backdropFilter = `blur(${blurRadius}px)`;
     focusingScreen.style.opacity = '1';
+    focusingOverlay.style.transition = `opacity ${blurSpeed}s ${blurEasing}`;
+    focusingOverlay.style.opacity = '1';
 
     // Morph container
     animate(island, {
@@ -291,7 +333,9 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
 
     // Un-blur (reuses the transition timing set by expandIsland)
     focusingScreen.style.opacity = '0';
+    focusingScreen.style.webkitBackdropFilter = 'blur(0px)';
     focusingScreen.style.backdropFilter = 'blur(0px)';
+    focusingOverlay.style.opacity = '0';
 
     // Animate rolls out
     rolls.forEach((roll, i) => {

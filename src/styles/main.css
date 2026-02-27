@@ -20,22 +20,39 @@
 }
 
 /* ── FOCUSING SCREEN — overlay during blur ── */
+/* Blur layer (no blend mode — Safari breaks backdrop-filter + mix-blend-mode) */
 .focusing-screen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  -webkit-backdrop-filter: blur(0px);
+  backdrop-filter: blur(0px);
+  transition: opacity 0.35s ease, -webkit-backdrop-filter 0.4s ease, backdrop-filter 0.4s ease;
+  will-change: opacity, backdrop-filter;
+}
+
+/* SVG overlay layer (blend mode, synced opacity) */
+.focusing-overlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
   mix-blend-mode: overlay;
   opacity: 0;
-  backdrop-filter: blur(0px);
-  transition: opacity 0.35s ease, backdrop-filter 0.4s ease;
-  will-change: opacity, backdrop-filter;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.focusing-screen img {
+.focusing-overlay img {
   width: 60%;
   aspect-ratio: 1040 / 444;
+}
+
+@media (orientation: portrait) {
+  .focusing-overlay img {
+    transform: rotate(90deg);
+    width: 60vh;
+  }
 }
 
 /* ── GRAIN CANVAS — pure overlay, click-through ── */

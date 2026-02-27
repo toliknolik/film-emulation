@@ -34,3 +34,9 @@
   margin-bottom: 36px;
   text-wrap: balance;
 }
+
+@media (max-width: 600px) {
+  .content-eyebrow { font-size: 7px; margin-bottom: 10px; }
+  .content-title { font-size: 28px; margin-bottom: 18px; }
+  .content-body { font-size: 13px; line-height: 1.7; margin-bottom: 24px; }
+}
