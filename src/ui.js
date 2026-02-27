@@ -149,8 +149,8 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
 
   /* ── Sound effects (native Audio API) ── */
   const sfx = {
-    unfocus: Object.assign(new Audio('/sounds/unfocus.mp3'), { volume: 0.3 }),
-    tick:    Object.assign(new Audio('/sounds/tick.mp3'),    { volume: 0.15 }),
+    unfocus: Object.assign(new Audio('/sounds/unfocus.mp3'), { volume: 0.25 }),
+    tick:    Object.assign(new Audio('/sounds/tick.mp3'),    { volume: 0.5 }),
   };
   function playSfx(sound) {
     sound.currentTime = 0;
@@ -229,6 +229,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
   const rolls = [...island.querySelectorAll('.island-roll')];
 
   let islandState = 'collapsed'; // 'collapsed' | 'collapsing' | 'expanded'
+  let skipNextTick = false;       // skip first roll tick after expand (roll slides under cursor)
 
   /** Update the pill to reflect the current film. */
   function updatePill() {
@@ -253,6 +254,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
     islandState = 'expanded';
 
     playSfx(sfx.unfocus);
+    skipNextTick = true;
 
     // Blur-in: speed + easing from sidebar controls
     focusingScreen.style.transition =
@@ -397,7 +399,8 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
   rolls.forEach(roll => {
     roll.addEventListener('mouseenter', () => {
       if (islandState !== 'expanded') return;
-      playSfx(sfx.tick);
+      if (skipNextTick) skipNextTick = false;
+      else playSfx(sfx.tick);
       animate(roll, { y: -10 }, spring);
     });
     roll.addEventListener('mouseleave', () => {
