@@ -51,10 +51,9 @@ const NOFILM_LOGO_HTML = `<img src="/rolls/nofilm-icon.svg" width="17" height="1
  * @param {FilmEmulator} emulator
  * @param {HTMLElement}  sidebarRoot     – container that will hold sidebar markup
  * @param {HTMLElement}  contentRoot     – the #content div (also the grade target)
- * @param {HTMLElement}  statusTextEl    – element for film name in the status bar
  * @param {HTMLElement}  cardSelectorEl  – container for the dynamic island selector
  */
-export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSelectorEl) {
+export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
   /* ── Sidebar HTML ──────────────────────────────────────────── */
   sidebarRoot.innerHTML = `
     <div class="sidebar-header">
@@ -107,8 +106,8 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
         <input type="range" id="ctrl-blur-speed" min="0.05" max="1.5" step="0.05" value="0.35">
       </div>
       <div class="control-row">
-        <div class="control-label">Radius <span id="val-blur-radius">12</span>px</div>
-        <input type="range" id="ctrl-blur-radius" min="1" max="30" step="1" value="12">
+        <div class="control-label">Radius <span id="val-blur-radius">20</span>px</div>
+        <input type="range" id="ctrl-blur-radius" min="1" max="30" step="1" value="20">
       </div>
       <div class="control-row">
         <div class="control-label">Easing</div>
@@ -195,7 +194,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
   /* ── Dynamic island film selector ────────────────────────────── */
   const rollStockIds = Object.keys(STOCKS).filter(id => id !== 'none');
   const spring = { type: 'spring', visualDuration: 0.4, bounce: 0.15 };
-  let blurRadius = 12;            // px      — controlled by Radius slider
+  let blurRadius = 20;            // px      — controlled by Radius slider
   let blurSpeed = 0.35;           // seconds — controlled by Speed slider
   let blurEasing = 'ease';        // CSS easing — controlled by Easing dropdown
 
@@ -323,7 +322,6 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
     filmBtns.forEach(b => {
       b.classList.toggle('active', b.dataset.film === filmId);
     });
-    statusTextEl.textContent = emulator.stock.name;
     applyStockDefaults();
     emulator.apply();
     updatePill();
@@ -384,14 +382,21 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
   let leaveTimer = null;
   let suppressHover = false;       // true after roll/eject click until mouse leaves
 
-  island.addEventListener('mouseenter', (e) => {
-    if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+  function tryExpand(e) {
     if (suppressHover || islandState !== 'collapsed') return;
-    // Don't expand when cursor enters over the eject button
     const el = document.elementFromPoint(e.clientX, e.clientY);
     if (el && clearBtn.contains(el)) return;
     expandIsland();
+  }
+
+  island.addEventListener('mouseenter', (e) => {
+    if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+    tryExpand(e);
   });
+
+  // If mouseenter was blocked (cursor entered over eject button),
+  // expand once the cursor moves off it while still inside the island.
+  island.addEventListener('mousemove', tryExpand);
 
   island.addEventListener('mouseleave', () => {
     suppressHover = false;
@@ -458,5 +463,13 @@ export function initUI(emulator, sidebarRoot, contentRoot, statusTextEl, cardSel
 
   updatePill();
   applyStockDefaults();
-  statusTextEl.textContent = emulator.stock.name;
+
+  /* ── Sidebar: hidden by default, toggle with Cmd+O / Ctrl+O ── */
+  sidebarRoot.classList.add('hidden');
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'o') {
+      e.preventDefault();
+      sidebarRoot.classList.toggle('hidden');
+    }
+  });
 }

@@ -10,6 +10,10 @@
   z-index: 100;
 }
 
+#sidebar.hidden {
+  display: none;
+}
+
 .sidebar-header {
   padding: 24px 20px 16px;
   border-bottom: 1px solid var(--ui-border);

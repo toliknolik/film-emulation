@@ -8,16 +8,10 @@ import { initUI } from './ui.js';
 
 const content = document.getElementById('content');
 const grainCanvas = document.getElementById('grain-canvas');
-const glStatus = document.getElementById('gl-status');
-const filmStatus = document.getElementById('film-status');
 const sidebar = document.getElementById('sidebar');
 const cardSelector = document.getElementById('film-card-selector');
 
-const emulator = new FilmEmulator({
-  content,
-  grainCanvas,
-  onStatusChange(msg) { glStatus.textContent = msg; },
-});
+const emulator = new FilmEmulator({ content, grainCanvas });
 
-initUI(emulator, sidebar, content, filmStatus, cardSelector);
+initUI(emulator, sidebar, content, cardSelector);
 emulator.apply();
