@@ -426,10 +426,16 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
   let leaveTimer = null;
   let suppressHover = false;       // true after roll/eject click until mouse leaves
 
+  function isInEjectZone(e) {
+    const r = clearBtn.getBoundingClientRect();
+    const pad = 15;
+    return e.clientX >= r.left - pad && e.clientX <= r.right + pad &&
+           e.clientY >= r.top - pad  && e.clientY <= r.bottom + pad;
+  }
+
   function tryExpand(e) {
     if (suppressHover || islandState !== 'collapsed') return;
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    if (el && clearBtn.contains(el)) return;
+    if (isInEjectZone(e)) return;
     expandIsland();
   }
 

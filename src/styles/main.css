@@ -51,7 +51,7 @@
 @media (orientation: portrait) {
   .focusing-overlay img {
     transform: rotate(90deg);
-    width: 60vh;
+    width: 150vw;
   }
 }
 
