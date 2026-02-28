@@ -14,4 +14,5 @@ const cardSelector = document.getElementById('film-card-selector');
 const emulator = new FilmEmulator({ content, grainCanvas });
 
 initUI(emulator, sidebar, content, cardSelector);
-emulator.apply();
+// Defer initial render so mobile Safari finishes layout before grain canvas reads dimensions
+requestAnimationFrame(() => emulator.apply());
