@@ -154,6 +154,25 @@
   transform: rotate(135deg);
 }
 
+/* ── Expanded header (film name, visible when expanded) ── */
+.island-header {
+  position: absolute;
+  top: 8px;
+  left: 27px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 2;
+}
+
+.island-header-name {
+  font-family: 'Fragment Mono', 'DM Mono', monospace;
+  font-size: 12px;
+  color: #ffb301;
+  letter-spacing: 0.72px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
 /* ── Expanded tray ── */
 .island-tray {
   position: absolute;

@@ -253,6 +253,9 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
         </div>
         <button class="island-clear" aria-label="Clear film">${CLEAR_FILM_SVG}</button>
       </div>
+      <div class="island-header">
+        <span class="island-header-name"></span>
+      </div>
       <div class="island-tray">
         ${rollStockIds.map(id => buildRollHTML(id)).join('')}
       </div>
@@ -266,6 +269,8 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
   const clearBtn = island.querySelector('.island-clear');
   const tray = island.querySelector('.island-tray');
   const rolls = [...island.querySelectorAll('.island-roll')];
+  const header = island.querySelector('.island-header');
+  const headerName = island.querySelector('.island-header-name');
 
   let islandState = 'collapsed'; // 'collapsed' | 'collapsing' | 'expanded'
   let skipNextTick = false;       // skip first roll tick after expand (roll slides under cursor)
@@ -315,6 +320,10 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     // Fade out pill content
     animate(pill, { opacity: 0 }, { duration: 0.15 });
 
+    // Show header with current film name
+    headerName.textContent = emulator.stock.cardName.toUpperCase();
+    animate(header, { opacity: 1 }, { duration: 0.2, delay: 0.1 });
+
     // Show tray
     tray.style.display = 'block';
 
@@ -337,6 +346,9 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     focusingScreen.style.webkitBackdropFilter = 'blur(0px)';
     focusingScreen.style.backdropFilter = 'blur(0px)';
     focusingOverlay.style.opacity = '0';
+
+    // Fade out header
+    animate(header, { opacity: 0 }, { duration: 0.12 });
 
     // Animate rolls out
     rolls.forEach((roll, i) => {
@@ -463,10 +475,12 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
       if (skipNextTick) skipNextTick = false;
       else playSfx(sfx.tick);
       animate(roll, { y: -10 }, spring);
+      headerName.textContent = STOCKS[roll.dataset.film].cardName.toUpperCase();
     });
     roll.addEventListener('mouseleave', () => {
       if (islandState !== 'expanded') return;
       animate(roll, { y: 0 }, spring);
+      headerName.textContent = emulator.stock.cardName.toUpperCase();
     });
   });
 
@@ -489,6 +503,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     playSfx(sfx.eject);
     animate(svg, { rotate: [45, 45 - 360] }, { duration: 0.5, easing: 'ease-out' });
     switchFilm('none');
+    if (islandState === 'expanded') collapseIsland();
   });
 
   /* ── Sidebar film buttons sync ── */
