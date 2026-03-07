@@ -1,5 +1,8 @@
 import STOCKS from './film-stocks.js';
 import { animate } from 'motion';
+import { WebHaptics } from 'web-haptics';
+
+const haptics = new WebHaptics();
 
 /* ── Film logo builders (24×24 CSS blocks for collapsed pill) ── */
 const LOGO_BUILDERS = {
@@ -299,6 +302,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     islandState = 'expanded';
 
     playSfx(sfx.unfocus);
+    haptics.trigger('nudge');
     skipNextTick = true;
 
     // Blur-in: speed + easing from sidebar controls
@@ -473,7 +477,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     roll.addEventListener('mouseenter', () => {
       if (islandState !== 'expanded') return;
       if (skipNextTick) skipNextTick = false;
-      else playSfx(sfx.tick);
+      else { playSfx(sfx.tick); haptics.trigger(30); }
       animate(roll, { y: -10 }, spring);
       headerName.textContent = STOCKS[roll.dataset.film].cardName.toUpperCase();
     });
@@ -489,6 +493,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     roll.addEventListener('click', (e) => {
       e.stopPropagation();
       const filmId = roll.dataset.film;
+      haptics.trigger('success');
       suppressHover = true;
       switchFilm(filmId);
       collapseIsland();
@@ -501,6 +506,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     const svg = clearBtn.querySelector('svg');
     suppressHover = true;
     playSfx(sfx.eject);
+    haptics.trigger('error');
     animate(svg, { rotate: [45, 45 - 360] }, { duration: 0.5, easing: 'ease-out' });
     switchFilm('none');
     if (islandState === 'expanded') collapseIsland();
