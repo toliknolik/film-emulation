@@ -202,18 +202,10 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
       .catch(() => {});
   });
 
-  // Unlock AudioContext on first touch (needed once, then all plays work)
-  const unlockAudio = () => {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    document.removeEventListener('touchstart', unlockAudio);
-    document.removeEventListener('pointerdown', unlockAudio);
-  };
-  document.addEventListener('touchstart', unlockAudio);
-  document.addEventListener('pointerdown', unlockAudio);
-
   function playSfx(name) {
     const buf = sfxBuffers[name];
-    if (!buf || audioCtx.state === 'suspended') return;
+    if (!buf) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     const source = audioCtx.createBufferSource();
     source.buffer = buf;
     const gain = audioCtx.createGain();
