@@ -202,16 +202,22 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
       .catch(() => {});
   });
 
-  function playSfx(name) {
-    const buf = sfxBuffers[name];
-    if (!buf) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+  function playBuffer(name) {
     const source = audioCtx.createBufferSource();
-    source.buffer = buf;
+    source.buffer = sfxBuffers[name];
     const gain = audioCtx.createGain();
     gain.gain.value = sfxVolumes[name] ?? 1;
     source.connect(gain).connect(audioCtx.destination);
     source.start(0);
+  }
+
+  function playSfx(name) {
+    if (!sfxBuffers[name]) return;
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume().then(() => playBuffer(name));
+    } else {
+      playBuffer(name);
+    }
   }
 
   /* ── Wire film buttons (wired after island sets up switchFilm) ── */
@@ -488,11 +494,20 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
   });
 
   /* ── Individual roll hover: lift 10px ── */
+  let lastTickTime = 0;
+  function playTick() {
+    const now = Date.now();
+    if (now - lastTickTime < 150) return;   // debounce (avoids double on desktop)
+    lastTickTime = now;
+    playSfx('tick');
+    haptics.trigger(30);
+  }
+
   rolls.forEach(roll => {
     roll.addEventListener('mouseenter', () => {
       if (islandState !== 'expanded') return;
       if (skipNextTick) skipNextTick = false;
-      else { playSfx('tick'); haptics.trigger(30); }
+      else playTick();
       animate(roll, { y: -10 }, spring);
       headerName.textContent = STOCKS[roll.dataset.film].cardName.toUpperCase();
     });
@@ -508,6 +523,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     roll.addEventListener('click', (e) => {
       e.stopPropagation();
       const filmId = roll.dataset.film;
+      playTick();
       haptics.trigger('success');
       suppressHover = true;
       switchFilm(filmId);
