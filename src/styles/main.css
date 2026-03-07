@@ -88,6 +88,8 @@
   overflow: hidden;
   cursor: pointer;
   will-change: width, height, border-radius;
+  /* Force proper border-radius clipping on mobile Safari during animation */
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
 }
 
 /* ── Collapsed pill ── */
