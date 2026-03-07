@@ -302,7 +302,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     islandState = 'expanded';
 
     playSfx(sfx.unfocus);
-    haptics.trigger('nudge');
+    setTimeout(() => haptics.trigger('nudge'), 0);
     skipNextTick = true;
 
     // Blur-in: speed + easing from sidebar controls
@@ -477,7 +477,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     roll.addEventListener('mouseenter', () => {
       if (islandState !== 'expanded') return;
       if (skipNextTick) skipNextTick = false;
-      else { playSfx(sfx.tick); haptics.trigger(30); }
+      else { playSfx(sfx.tick); setTimeout(() => haptics.trigger(30), 0); }
       animate(roll, { y: -10 }, spring);
       headerName.textContent = STOCKS[roll.dataset.film].cardName.toUpperCase();
     });
@@ -493,7 +493,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     roll.addEventListener('click', (e) => {
       e.stopPropagation();
       const filmId = roll.dataset.film;
-      haptics.trigger('success');
+      setTimeout(() => haptics.trigger('success'), 0);
       suppressHover = true;
       switchFilm(filmId);
       collapseIsland();
@@ -506,7 +506,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     const svg = clearBtn.querySelector('svg');
     suppressHover = true;
     playSfx(sfx.eject);
-    haptics.trigger('error');
+    setTimeout(() => haptics.trigger('error'), 0);
     animate(svg, { rotate: [45, 45 - 360] }, { duration: 0.5, easing: 'ease-out' });
     switchFilm('none');
     if (islandState === 'expanded') collapseIsland();
