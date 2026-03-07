@@ -354,7 +354,10 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
 
     // Animate rolls in (staggered from below)
     rolls.forEach((roll, i) => {
-      animate(roll, { y: 0, opacity: 1 }, {
+      // Clear inline styles set during collapse so Motion can take over
+      roll.style.removeProperty('opacity');
+      roll.style.removeProperty('transform');
+      animate(roll, { y: [20, 0], opacity: [0, 1] }, {
         ...spring,
         delay: i * 0.04,
       });
