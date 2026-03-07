@@ -335,11 +335,12 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     focusingOverlay.style.transition = `opacity ${blurSpeed}s ${blurEasing}`;
     focusingOverlay.style.opacity = '1';
 
-    // Morph container
+    // Morph container (clipPath provides reliable clipping on mobile Safari)
     animate(island, {
       width: `${EXPANDED_W}px`,
       height: `${EXPANDED_H}px`,
       borderRadius: '32px',
+      clipPath: 'inset(0% round 32px)',
     }, spring);
 
     // Fade out pill content
@@ -378,20 +379,19 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     // Fade out header
     animate(header, { opacity: 0 }, { duration: 0.12 });
 
-    // Hide rolls + tray and force Safari to flush the GPU layer cache
-    // before starting the collapse animation (prevents clipping flicker)
+    // Hide rolls + tray
     tray.style.visibility = 'hidden';
     rolls.forEach(roll => {
       roll.style.opacity = '0';
       roll.style.transform = 'translateY(20px)';
     });
-    void island.offsetHeight;          // force synchronous layout/paint
 
-    // Morph container back to pill
+    // Morph container back to pill (clipPath provides reliable clipping on mobile Safari)
     animate(island, {
       width: `${PILL_W}px`,
       height: `${PILL_H}px`,
       borderRadius: '70px',
+      clipPath: 'inset(0% round 70px)',
     }, spring);
 
     // Fade in pill content
