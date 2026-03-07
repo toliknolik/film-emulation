@@ -375,11 +375,12 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     // Fade out header
     animate(header, { opacity: 0 }, { duration: 0.12 });
 
-    // Hide rolls + tray immediately (prevents clipping flicker on mobile)
-    rolls.forEach(roll => {
-      animate(roll, { y: 20, opacity: 0 }, { duration: 0.1 });
-    });
+    // Hide rolls + tray immediately (no animation — prevents clipping flicker on mobile Safari)
     tray.style.display = 'none';
+    rolls.forEach(roll => {
+      roll.style.opacity = '0';
+      roll.style.transform = 'translateY(20px)';
+    });
 
     // Morph container back to pill
     animate(island, {
