@@ -350,7 +350,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     animate(header, { opacity: 1 }, { duration: 0.2, delay: 0.1 });
 
     // Show tray
-    tray.style.display = 'block';
+    tray.style.visibility = 'visible';
 
     // Animate rolls in (staggered from below)
     rolls.forEach((roll, i) => {
@@ -378,12 +378,14 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     // Fade out header
     animate(header, { opacity: 0 }, { duration: 0.12 });
 
-    // Hide rolls + tray immediately (no animation — prevents clipping flicker on mobile Safari)
-    tray.style.display = 'none';
+    // Hide rolls + tray and force Safari to flush the GPU layer cache
+    // before starting the collapse animation (prevents clipping flicker)
+    tray.style.visibility = 'hidden';
     rolls.forEach(roll => {
       roll.style.opacity = '0';
       roll.style.transform = 'translateY(20px)';
     });
+    void island.offsetHeight;          // force synchronous layout/paint
 
     // Morph container back to pill
     animate(island, {
@@ -562,7 +564,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
   island.style.borderRadius = '70px';
 
   // Set rolls to hidden initial state
-  tray.style.display = 'none';
+  tray.style.visibility = 'hidden';
   rolls.forEach(roll => {
     roll.style.transform = 'translateY(20px)';
     roll.style.opacity = '0';
