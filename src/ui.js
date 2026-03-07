@@ -375,10 +375,11 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     // Fade out header
     animate(header, { opacity: 0 }, { duration: 0.12 });
 
-    // Animate rolls out
-    rolls.forEach((roll, i) => {
-      animate(roll, { y: 20, opacity: 0 }, { duration: 0.15, delay: i * 0.02 });
+    // Hide rolls + tray immediately (prevents clipping flicker on mobile)
+    rolls.forEach(roll => {
+      animate(roll, { y: 20, opacity: 0 }, { duration: 0.1 });
     });
+    tray.style.display = 'none';
 
     // Morph container back to pill
     animate(island, {
@@ -390,11 +391,10 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     // Fade in pill content
     animate(pill, { opacity: 1 }, { ...spring, delay: 0.1 });
 
-    // Hide tray after animation
+    // Mark collapsed after morph completes
     setTimeout(() => {
       if (islandState === 'collapsing') {
         islandState = 'collapsed';
-        tray.style.display = 'none';
       }
     }, spring.visualDuration * 1000 + 50);
   }
