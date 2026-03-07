@@ -188,15 +188,38 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
   focusingOverlay.innerHTML = '<img src="/focusing-screen.svg" alt="" draggable="false">';
   contentRoot.parentElement.insertBefore(focusingOverlay, focusingScreen.nextSibling);
 
-  /* ── Sound effects (native Audio API) ── */
-  const sfx = {
-    unfocus: Object.assign(new Audio('/sounds/unfocus.mp3'), { volume: 0.25 }),
-    tick:    Object.assign(new Audio('/sounds/tick.mp3'),    { volume: 0.5 }),
-    eject:   Object.assign(new Audio('/sounds/eject.mp3'),   { volume: 0.4 }),
+  /* ── Sound effects (Web Audio API — unlock once, play forever) ── */
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const sfxBuffers = {};
+  const sfxVolumes = { unfocus: 0.25, tick: 0.5, eject: 0.4 };
+
+  // Decode sounds into buffers
+  ['unfocus', 'tick', 'eject'].forEach(name => {
+    fetch(`/sounds/${name}.mp3`)
+      .then(r => r.arrayBuffer())
+      .then(buf => audioCtx.decodeAudioData(buf))
+      .then(decoded => { sfxBuffers[name] = decoded; })
+      .catch(() => {});
+  });
+
+  // Unlock AudioContext on first touch (needed once, then all plays work)
+  const unlockAudio = () => {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    document.removeEventListener('touchstart', unlockAudio);
+    document.removeEventListener('pointerdown', unlockAudio);
   };
-  function playSfx(sound) {
-    sound.currentTime = 0;
-    sound.play().catch(() => {});
+  document.addEventListener('touchstart', unlockAudio);
+  document.addEventListener('pointerdown', unlockAudio);
+
+  function playSfx(name) {
+    const buf = sfxBuffers[name];
+    if (!buf || audioCtx.state === 'suspended') return;
+    const source = audioCtx.createBufferSource();
+    source.buffer = buf;
+    const gain = audioCtx.createGain();
+    gain.gain.value = sfxVolumes[name] ?? 1;
+    source.connect(gain).connect(audioCtx.destination);
+    source.start(0);
   }
 
   /* ── Wire film buttons (wired after island sets up switchFilm) ── */
@@ -301,8 +324,8 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     if (islandState !== 'collapsed') return;
     islandState = 'expanded';
 
-    playSfx(sfx.unfocus);
-    setTimeout(() => haptics.trigger('nudge'), 0);
+    playSfx('unfocus');
+    haptics.trigger('nudge');
     skipNextTick = true;
 
     // Blur-in: speed + easing from sidebar controls
@@ -477,7 +500,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     roll.addEventListener('mouseenter', () => {
       if (islandState !== 'expanded') return;
       if (skipNextTick) skipNextTick = false;
-      else { playSfx(sfx.tick); setTimeout(() => haptics.trigger(30), 0); }
+      else { playSfx('tick'); haptics.trigger(30); }
       animate(roll, { y: -10 }, spring);
       headerName.textContent = STOCKS[roll.dataset.film].cardName.toUpperCase();
     });
@@ -493,7 +516,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     roll.addEventListener('click', (e) => {
       e.stopPropagation();
       const filmId = roll.dataset.film;
-      setTimeout(() => haptics.trigger('success'), 0);
+      haptics.trigger('success');
       suppressHover = true;
       switchFilm(filmId);
       collapseIsland();
@@ -505,8 +528,8 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     e.stopPropagation();
     const svg = clearBtn.querySelector('svg');
     suppressHover = true;
-    playSfx(sfx.eject);
-    setTimeout(() => haptics.trigger('error'), 0);
+    playSfx('eject');
+    haptics.trigger('error');
     animate(svg, { rotate: [45, 45 - 360] }, { duration: 0.5, easing: 'ease-out' });
     switchFilm('none');
     if (islandState === 'expanded') collapseIsland();
