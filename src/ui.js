@@ -635,7 +635,56 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
   document.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'o') {
       e.preventDefault();
-      sidebarRoot.classList.toggle('hidden');
+      toggleSidebar();
     }
   });
+
+  /* ── Mobile sidebar: backdrop + edge swipe ── */
+  const backdrop = document.createElement('div');
+  backdrop.className = 'sidebar-backdrop hidden';
+  document.body.appendChild(backdrop);
+
+  function toggleSidebar(forceOpen) {
+    const isHidden = sidebarRoot.classList.contains('hidden');
+    const open = forceOpen !== undefined ? forceOpen : isHidden;
+    sidebarRoot.classList.toggle('hidden', !open);
+    backdrop.classList.toggle('hidden', !open);
+  }
+
+  backdrop.addEventListener('click', () => toggleSidebar(false));
+
+  // Edge swipe: start from left 30px, drag right to open; drag left to close
+  let swipeStartX = 0;
+  let swipeStartY = 0;
+  let swiping = false;
+  const EDGE_ZONE = 30;         // px from left edge to start swipe
+  const SWIPE_THRESHOLD = 50;   // px drag distance to trigger
+
+  document.addEventListener('touchstart', (e) => {
+    const touch = e.touches[0];
+    const sidebarOpen = !sidebarRoot.classList.contains('hidden');
+    // Start swipe from left edge (to open) or anywhere (to close)
+    if (touch.clientX < EDGE_ZONE || sidebarOpen) {
+      swipeStartX = touch.clientX;
+      swipeStartY = touch.clientY;
+      swiping = true;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    if (!swiping) return;
+    swiping = false;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - swipeStartX;
+    const dy = Math.abs(touch.clientY - swipeStartY);
+    // Only trigger if horizontal swipe (dx > dy)
+    if (dy > Math.abs(dx)) return;
+
+    const sidebarOpen = !sidebarRoot.classList.contains('hidden');
+    if (!sidebarOpen && dx > SWIPE_THRESHOLD) {
+      toggleSidebar(true);
+    } else if (sidebarOpen && dx < -SWIPE_THRESHOLD) {
+      toggleSidebar(false);
+    }
+  }, { passive: true });
 }

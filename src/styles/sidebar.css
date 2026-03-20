@@ -14,6 +14,39 @@
   display: none;
 }
 
+/* ── Mobile sidebar: slide-over overlay ── */
+@media (max-width: 600px) {
+  #sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-w);
+    z-index: 200;
+    transform: translateX(0);
+    transition: transform 0.28s ease;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  }
+  #sidebar.hidden {
+    display: flex;
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 199;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 1;
+    transition: opacity 0.28s ease;
+  }
+  .sidebar-backdrop.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
 .sidebar-header {
   padding: 24px 20px 16px;
   border-bottom: 1px solid var(--ui-border);
