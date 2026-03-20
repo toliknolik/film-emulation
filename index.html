@@ -7,10 +7,61 @@
 </head>
 <body>
 
+<!-- SVG filter graph for directional motion blur (hidden, zero-size) -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="motionBlur" x="-15%" y="-30%" width="130%" height="160%">
+      <!-- Base: directional blur with edge pixel duplication -->
+      <feGaussianBlur in="SourceGraphic" stdDeviation="0 0" edgeMode="duplicate" result="base"/>
+
+      <!-- Shared Perlin noise for organic wobble -->
+      <feTurbulence type="turbulence" baseFrequency="0.012 0.018"
+        numOctaves="2" seed="0" result="wobbleNoise"/>
+
+      <!-- Near trail: small offset → blur → wobble → tint -->
+      <feOffset in="SourceGraphic" dx="0" dy="0" result="nearOff"/>
+      <feGaussianBlur in="nearOff" stdDeviation="0 0" edgeMode="duplicate" result="nearBlur"/>
+      <feDisplacementMap in="nearBlur" in2="wobbleNoise"
+        scale="0" xChannelSelector="R" yChannelSelector="G" result="nearWobble"/>
+      <feColorMatrix in="nearWobble" type="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0"
+        result="near"/>
+
+      <!-- Mid trail: medium offset → blur → wobble → tint -->
+      <feOffset in="SourceGraphic" dx="0" dy="0" result="midOff"/>
+      <feGaussianBlur in="midOff" stdDeviation="0 0" edgeMode="duplicate" result="midBlur"/>
+      <feDisplacementMap in="midBlur" in2="wobbleNoise"
+        scale="0" xChannelSelector="R" yChannelSelector="G" result="midWobble"/>
+      <feColorMatrix in="midWobble" type="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0"
+        result="mid"/>
+
+      <!-- Far trail: large offset → blur → wobble → tint -->
+      <feOffset in="SourceGraphic" dx="0" dy="0" result="farOff"/>
+      <feGaussianBlur in="farOff" stdDeviation="0 0" edgeMode="duplicate" result="farBlur"/>
+      <feDisplacementMap in="farBlur" in2="wobbleNoise"
+        scale="0" xChannelSelector="R" yChannelSelector="G" result="farWobble"/>
+      <feColorMatrix in="farWobble" type="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0"
+        result="far"/>
+
+      <!-- Composite: back-to-front merge -->
+      <feMerge>
+        <feMergeNode in="far"/>
+        <feMergeNode in="mid"/>
+        <feMergeNode in="near"/>
+        <feMergeNode in="base"/>
+      </feMerge>
+    </filter>
+  </defs>
+</svg>
+
 <nav id="sidebar"></nav>
 
 <main id="main">
-  <div id="content"></div>
+  <div id="content-blur-wrapper">
+    <div id="content"></div>
+  </div>
   <canvas id="grain-canvas"></canvas>
 
   <div id="film-card-selector"></div>

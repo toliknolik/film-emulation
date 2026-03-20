@@ -5,10 +5,17 @@
   overflow: hidden;
 }
 
-/* ── CONTENT — normal interactive DOM, never rasterized ── */
-#content {
+/* ── BLUR WRAPPER — receives SVG motion blur filter (no transition) ── */
+#content-blur-wrapper {
   position: absolute;
   inset: 0;
+  overflow: hidden;
+}
+
+/* ── CONTENT — normal interactive DOM, never rasterized ── */
+#content {
+  width: 100%;
+  height: 100%;
   overflow-y: auto;
   padding: 52px 60px 80px;
   background: #f2ede4;

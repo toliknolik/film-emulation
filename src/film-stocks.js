@@ -86,6 +86,28 @@ const STOCKS = {
       ].join(' ');
     },
   },
+
+  eterna: {
+    name: 'Fuji Eterna 250T',
+    cardName: 'Eterna 250T',
+    description: 'Teal shadows · amber highs · motion blur',
+    swatch: 'eterna',
+    brand: 'fuji',
+    grainIntensity: 0.85,
+    grainSize: 1.0,
+    channelSep: 1.2,
+    defaults: { intensity: 0.25, size: 0.50, grade: 1.00, shutter: 0.50 },
+    buildCSSFilter(s) {
+      if (s === 0) return '';
+      return [
+        `sepia(${(0.35 * s).toFixed(3)})`,
+        `saturate(${(1.0 + 0.55 * s).toFixed(3)})`,
+        `brightness(${(1.0 - 0.04 * s).toFixed(3)})`,
+        `contrast(${(1.0 + 0.22 * s).toFixed(3)})`,
+        `hue-rotate(${(-28 * s).toFixed(1)}deg)`,
+      ].join(' ');
+    },
+  },
 };
 
 export default STOCKS;

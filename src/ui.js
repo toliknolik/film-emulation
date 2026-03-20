@@ -122,6 +122,22 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
         <div class="control-label">Color Grade <span id="val-grade">1.00</span></div>
         <input type="range" id="ctrl-grade" min="0" max="1.5" step="0.05" value="1.0">
       </div>
+      <div class="control-row">
+        <div class="control-label">Shutter Blur <span id="val-shutter">0.00</span></div>
+        <input type="range" id="ctrl-shutter" min="0" max="1" step="0.05" value="0">
+      </div>
+      <div class="control-row" id="cursor-blur-row" style="display:none">
+        <label class="toggle-label">
+          <input type="checkbox" id="ctrl-cursor-blur">
+          <span class="toggle-text">Cursor blur</span>
+        </label>
+      </div>
+      <div class="control-row" id="gyro-blur-row" style="display:none">
+        <label class="toggle-label">
+          <input type="checkbox" id="ctrl-gyro-blur">
+          <span class="toggle-text">Gyro blur</span>
+        </label>
+      </div>
     </div>
 
     <div class="section-label">Spring</div>
@@ -179,14 +195,17 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
   `;
 
   /* ── Focusing screen overlay (shown during blur) ── */
+  const mainEl = document.getElementById('main');
+  const grainCanvas = document.getElementById('grain-canvas');
+
   const focusingScreen = document.createElement('div');
   focusingScreen.className = 'focusing-screen';
-  contentRoot.parentElement.insertBefore(focusingScreen, contentRoot.nextSibling);
+  mainEl.insertBefore(focusingScreen, grainCanvas);
 
   const focusingOverlay = document.createElement('div');
   focusingOverlay.className = 'focusing-overlay';
   focusingOverlay.innerHTML = '<img src="/focusing-screen.svg" alt="" draggable="false">';
-  contentRoot.parentElement.insertBefore(focusingOverlay, focusingScreen.nextSibling);
+  mainEl.insertBefore(focusingOverlay, grainCanvas);
 
   /* ── Sound effects (Web Audio API — unlock once, play forever) ── */
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -228,6 +247,7 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
     { inputId: 'ctrl-intensity', valueId: 'val-intensity', prop: 'intensity',      key: 'intensity' },
     { inputId: 'ctrl-size',      valueId: 'val-size',      prop: 'size',           key: 'size' },
     { inputId: 'ctrl-grade',     valueId: 'val-grade',     prop: 'grade',          key: 'grade' },
+    { inputId: 'ctrl-shutter',   valueId: 'val-shutter',   prop: 'shutter',        key: 'shutter' },
   ];
 
   for (const s of sliders) {
@@ -242,20 +262,57 @@ export function initUI(emulator, sidebarRoot, contentRoot, cardSelectorEl) {
   }
 
   /** Reset all sliders to the current stock's defaults. */
+  const SLIDER_FALLBACKS = { intensity: 1.0, size: 1.0, grade: 1.0, shutter: 0 };
+  const shutterRow = document.getElementById('ctrl-shutter').closest('.control-row');
+  const cursorBlurRow = document.getElementById('cursor-blur-row');
+  const cursorBlurCheckbox = document.getElementById('ctrl-cursor-blur');
+  const gyroBlurRow = document.getElementById('gyro-blur-row');
+  const gyroBlurCheckbox = document.getElementById('ctrl-gyro-blur');
+  const hasGyro = typeof DeviceMotionEvent !== 'undefined';
+
+  cursorBlurCheckbox.addEventListener('change', () => {
+    emulator.cursorBlur = cursorBlurCheckbox.checked;
+  });
+
+  gyroBlurCheckbox.addEventListener('change', async () => {
+    if (gyroBlurCheckbox.checked) {
+      const perm = await emulator.requestGyroPermission();
+      if (perm !== 'granted') {
+        gyroBlurCheckbox.checked = false;
+        emulator.gyroBlur = false;
+        return;
+      }
+      emulator.gyroBlur = true;
+    } else {
+      emulator.gyroBlur = false;
+    }
+  });
+
   function applyStockDefaults() {
     const defs = emulator.stock.defaults || {};
     for (const s of sliders) {
-      const v = defs[s.key] ?? 1.0;
+      const v = defs[s.key] ?? SLIDER_FALLBACKS[s.key] ?? 1.0;
       const input = document.getElementById(s.inputId);
       const display = document.getElementById(s.valueId);
       input.value = v;
       display.textContent = v.toFixed(2);
       emulator[s.prop] = v;
     }
+    // Shutter slider + blur toggles only visible for stocks that define shutter
+    const hasShutter = 'shutter' in defs;
+    shutterRow.style.display = hasShutter ? '' : 'none';
+    cursorBlurRow.style.display = hasShutter ? '' : 'none';
+    gyroBlurRow.style.display = (hasShutter && hasGyro) ? '' : 'none';
+    if (!hasShutter) {
+      cursorBlurCheckbox.checked = false;
+      emulator.cursorBlur = false;
+      gyroBlurCheckbox.checked = false;
+      emulator.gyroBlur = false;
+    }
   }
 
   /* ── Dynamic island film selector ────────────────────────────── */
-  const rollStockIds = Object.keys(STOCKS).filter(id => id !== 'none');
+  const rollStockIds = Object.keys(STOCKS).filter(id => id !== 'none' && id !== 'eterna');
   const spring = { type: 'spring', visualDuration: 0.4, bounce: 0.15 };
   let blurRadius = 20;            // px      — controlled by Radius slider
   let blurSpeed = 0.35;           // seconds — controlled by Speed slider
