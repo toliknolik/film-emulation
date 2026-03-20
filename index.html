@@ -11,46 +11,100 @@
 <svg width="0" height="0" style="position:absolute">
   <defs>
     <filter id="motionBlur" x="-15%" y="-30%" width="130%" height="160%">
-      <!-- Base: directional blur with edge pixel duplication -->
+      <!-- Base: light directional blur on source -->
       <feGaussianBlur in="SourceGraphic" stdDeviation="0 0" result="base"/>
 
       <!-- Shared Perlin noise for organic wobble -->
       <feTurbulence type="turbulence" baseFrequency="0.012 0.018"
         numOctaves="2" seed="0" result="wobbleNoise"/>
 
-      <!-- Near trail: small offset → blur → wobble → tint -->
-      <feOffset in="SourceGraphic" dx="0" dy="0" result="nearOff"/>
-      <feGaussianBlur in="nearOff" stdDeviation="0 0" result="nearBlur"/>
-      <feDisplacementMap in="nearBlur" in2="wobbleNoise"
-        scale="0" xChannelSelector="R" yChannelSelector="G" result="nearWobble"/>
-      <feColorMatrix in="nearWobble" type="matrix"
-        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0"
-        result="near"/>
+      <!-- Ghost 1: sharp afterimage — barely blurred, high opacity -->
+      <feOffset in="SourceGraphic" dx="0" dy="0" result="g1Off"/>
+      <feGaussianBlur in="g1Off" stdDeviation="0 0" result="g1Blur"/>
+      <feDisplacementMap in="g1Blur" in2="wobbleNoise"
+        scale="0" xChannelSelector="R" yChannelSelector="G" result="g1Wobble"/>
+      <feColorMatrix in="g1Wobble" type="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0" result="g1"/>
 
-      <!-- Mid trail: medium offset → blur → wobble → tint -->
-      <feOffset in="SourceGraphic" dx="0" dy="0" result="midOff"/>
-      <feGaussianBlur in="midOff" stdDeviation="0 0" result="midBlur"/>
-      <feDisplacementMap in="midBlur" in2="wobbleNoise"
-        scale="0" xChannelSelector="R" yChannelSelector="G" result="midWobble"/>
-      <feColorMatrix in="midWobble" type="matrix"
-        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0"
-        result="mid"/>
+      <!-- Ghost 2: slight blur, still recognizable -->
+      <feOffset in="SourceGraphic" dx="0" dy="0" result="g2Off"/>
+      <feGaussianBlur in="g2Off" stdDeviation="0 0" result="g2Blur"/>
+      <feDisplacementMap in="g2Blur" in2="wobbleNoise"
+        scale="0" xChannelSelector="R" yChannelSelector="G" result="g2Wobble"/>
+      <feColorMatrix in="g2Wobble" type="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0" result="g2"/>
 
-      <!-- Far trail: large offset → blur → wobble → tint -->
-      <feOffset in="SourceGraphic" dx="0" dy="0" result="farOff"/>
-      <feGaussianBlur in="farOff" stdDeviation="0 0" result="farBlur"/>
-      <feDisplacementMap in="farBlur" in2="wobbleNoise"
-        scale="0" xChannelSelector="R" yChannelSelector="G" result="farWobble"/>
-      <feColorMatrix in="farWobble" type="matrix"
-        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0"
-        result="far"/>
+      <!-- Ghost 3: medium blur, fading -->
+      <feOffset in="SourceGraphic" dx="0" dy="0" result="g3Off"/>
+      <feGaussianBlur in="g3Off" stdDeviation="0 0" result="g3Blur"/>
+      <feDisplacementMap in="g3Blur" in2="wobbleNoise"
+        scale="0" xChannelSelector="R" yChannelSelector="G" result="g3Wobble"/>
+      <feColorMatrix in="g3Wobble" type="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0" result="g3"/>
+
+      <!-- Ghost 4: soft blur, dim -->
+      <feOffset in="SourceGraphic" dx="0" dy="0" result="g4Off"/>
+      <feGaussianBlur in="g4Off" stdDeviation="0 0" result="g4Blur"/>
+      <feDisplacementMap in="g4Blur" in2="wobbleNoise"
+        scale="0" xChannelSelector="R" yChannelSelector="G" result="g4Wobble"/>
+      <feColorMatrix in="g4Wobble" type="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0" result="g4"/>
+
+      <!-- Ghost 5: heavy blur, faintest smear -->
+      <feOffset in="SourceGraphic" dx="0" dy="0" result="g5Off"/>
+      <feGaussianBlur in="g5Off" stdDeviation="0 0" result="g5Blur"/>
+      <feDisplacementMap in="g5Blur" in2="wobbleNoise"
+        scale="0" xChannelSelector="R" yChannelSelector="G" result="g5Wobble"/>
+      <feColorMatrix in="g5Wobble" type="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0" result="g5"/>
 
       <!-- Composite: back-to-front merge -->
       <feMerge>
-        <feMergeNode in="far"/>
-        <feMergeNode in="mid"/>
-        <feMergeNode in="near"/>
+        <feMergeNode in="g5"/>
+        <feMergeNode in="g4"/>
+        <feMergeNode in="g3"/>
+        <feMergeNode in="g2"/>
+        <feMergeNode in="g1"/>
         <feMergeNode in="base"/>
+      </feMerge>
+    </filter>
+
+    <!-- Safari-compatible simplified filter (no feTurbulence/feDisplacementMap) -->
+    <filter id="motionBlurSimple" x="-15%" y="-30%" width="130%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="0 0" result="sBase"/>
+
+      <feOffset in="SourceGraphic" dx="0" dy="0" result="s1Off"/>
+      <feGaussianBlur in="s1Off" stdDeviation="0 0" result="s1Blur"/>
+      <feColorMatrix in="s1Blur" type="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0" result="s1"/>
+
+      <feOffset in="SourceGraphic" dx="0" dy="0" result="s2Off"/>
+      <feGaussianBlur in="s2Off" stdDeviation="0 0" result="s2Blur"/>
+      <feColorMatrix in="s2Blur" type="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0" result="s2"/>
+
+      <feOffset in="SourceGraphic" dx="0" dy="0" result="s3Off"/>
+      <feGaussianBlur in="s3Off" stdDeviation="0 0" result="s3Blur"/>
+      <feColorMatrix in="s3Blur" type="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0" result="s3"/>
+
+      <feOffset in="SourceGraphic" dx="0" dy="0" result="s4Off"/>
+      <feGaussianBlur in="s4Off" stdDeviation="0 0" result="s4Blur"/>
+      <feColorMatrix in="s4Blur" type="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0" result="s4"/>
+
+      <feOffset in="SourceGraphic" dx="0" dy="0" result="s5Off"/>
+      <feGaussianBlur in="s5Off" stdDeviation="0 0" result="s5Blur"/>
+      <feColorMatrix in="s5Blur" type="matrix"
+        values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0 0" result="s5"/>
+
+      <feMerge>
+        <feMergeNode in="s5"/>
+        <feMergeNode in="s4"/>
+        <feMergeNode in="s3"/>
+        <feMergeNode in="s2"/>
+        <feMergeNode in="s1"/>
+        <feMergeNode in="sBase"/>
       </feMerge>
     </filter>
   </defs>

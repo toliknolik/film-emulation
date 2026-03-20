@@ -277,18 +277,39 @@ export default class FilmEmulator {
   /* ── SVG motion blur filter refs ───────────────────────────── */
 
   _initSVGFilterRefs() {
-    const filter = document.getElementById('motionBlur');
+    // Safari chokes on feTurbulence/feDisplacementMap — use simplified filter
+    this._isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const filterId = this._isSafari ? 'motionBlurSimple' : 'motionBlur';
+    this._svgFilterId = filterId;
+
+    const filter = document.getElementById(filterId);
     if (!filter) return;
 
-    // Cache references to SVG filter primitives by their `result` attribute
     const q = (result) => filter.querySelector(`[result="${result}"]`);
-    this._svgBase = q('base');
-    this._svgTurbulence = q('wobbleNoise');
-    this._trailRefs = [
-      [q('nearOff'), q('nearBlur'), q('nearWobble'), q('near')],
-      [q('midOff'),  q('midBlur'),  q('midWobble'),  q('mid')],
-      [q('farOff'),  q('farBlur'),  q('farWobble'),  q('far')],
-    ];
+
+    if (this._isSafari) {
+      // Simple filter: no wobble elements, 5 ghost layers
+      this._svgBase = q('sBase');
+      this._svgTurbulence = null;
+      this._trailRefs = [
+        [q('s1Off'), q('s1Blur'), null, q('s1')],
+        [q('s2Off'), q('s2Blur'), null, q('s2')],
+        [q('s3Off'), q('s3Blur'), null, q('s3')],
+        [q('s4Off'), q('s4Blur'), null, q('s4')],
+        [q('s5Off'), q('s5Blur'), null, q('s5')],
+      ];
+    } else {
+      // Full filter with wobble, 5 ghost layers
+      this._svgBase = q('base');
+      this._svgTurbulence = q('wobbleNoise');
+      this._trailRefs = [
+        [q('g1Off'), q('g1Blur'), q('g1Wobble'), q('g1')],
+        [q('g2Off'), q('g2Blur'), q('g2Wobble'), q('g2')],
+        [q('g3Off'), q('g3Blur'), q('g3Wobble'), q('g3')],
+        [q('g4Off'), q('g4Blur'), q('g4Wobble'), q('g4')],
+        [q('g5Off'), q('g5Blur'), q('g5Wobble'), q('g5')],
+      ];
+    }
     this._wobbleFrame = 0;
   }
 
@@ -344,9 +365,11 @@ export default class FilmEmulator {
   _getTrailTints() {
     const palettes = {
       eterna: [
-        'rgba(0, 70, 85, 0.25)',      // near: teal tint
-        'rgba(170, 110, 30, 0.20)',   // mid: amber tint
-        'rgba(0, 55, 75, 0.15)',      // far: deep teal tint
+        'rgba(0, 70, 85, 0.15)',      // ghost 1: teal (subtle on sharp copy)
+        'rgba(140, 100, 30, 0.18)',   // ghost 2: amber
+        'rgba(0, 65, 80, 0.22)',      // ghost 3: teal
+        'rgba(170, 110, 30, 0.20)',   // ghost 4: amber
+        'rgba(0, 55, 75, 0.15)',      // ghost 5: deep teal
       ],
     };
     return palettes[this._filmId] || null;
@@ -360,7 +383,7 @@ export default class FilmEmulator {
       offEl.setAttribute('dx', '0');
       offEl.setAttribute('dy', '0');
       blurEl.setAttribute('stdDeviation', '0 0');
-      wobbleEl.setAttribute('scale', '0');
+      if (wobbleEl) wobbleEl.setAttribute('scale', '0');
       tintEl.setAttribute('values', zero);
     }
     // Restore clean CSS grade (remove motion blur from content)
@@ -369,11 +392,15 @@ export default class FilmEmulator {
 
   /* ── Unified motion blur applicator ─────────────────────────── */
 
-  // Per-trail configs: near decays fast (snappy), far lingers (cinematic weight)
+  // 5 ghost layers: sharp afterimage → soft trailing smear
+  // Near ghosts: minimal blur (visible copies), high opacity, fast decay
+  // Far ghosts: heavy blur (smear tail), low opacity, slow decay (lingers)
   static TRAIL_CONFIGS = [
-    { offsetScale: 6,  blurScale: 3,  opacity: 0.9,  wobbleScale: 8,  decay: 0.82 },  // near
-    { offsetScale: 12, blurScale: 6,  opacity: 0.55, wobbleScale: 16, decay: 0.88 },  // mid
-    { offsetScale: 20, blurScale: 10, opacity: 0.25, wobbleScale: 28, decay: 0.93 },  // far
+    { offsetScale: 3,  blurScale: 0.4, opacity: 0.75, wobbleScale: 2,  decay: 0.78 },  // ghost 1: sharp copy
+    { offsetScale: 7,  blurScale: 1.2, opacity: 0.55, wobbleScale: 5,  decay: 0.82 },  // ghost 2: slight blur
+    { offsetScale: 12, blurScale: 3,   opacity: 0.40, wobbleScale: 10, decay: 0.87 },  // ghost 3: medium
+    { offsetScale: 18, blurScale: 6,   opacity: 0.25, wobbleScale: 18, decay: 0.91 },  // ghost 4: soft
+    { offsetScale: 26, blurScale: 10,  opacity: 0.12, wobbleScale: 28, decay: 0.94 },  // ghost 5: faint smear
   ];
 
   // Soft onset lerp rate — how fast the displayed strength catches up to target
@@ -405,7 +432,7 @@ export default class FilmEmulator {
     const tints = this._getTrailTints();
     const configs = FilmEmulator.TRAIL_CONFIGS;
 
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < configs.length; i++) {
       const cfg = configs[i];
       const s = trailStrengths[i];
       const [offEl, blurEl, wobbleEl, tintEl] = this._trailRefs[i];
@@ -419,7 +446,7 @@ export default class FilmEmulator {
       offEl.setAttribute('dx', dx.toFixed(1));
       offEl.setAttribute('dy', dy.toFixed(1));
       blurEl.setAttribute('stdDeviation', `${sdX.toFixed(1)} ${sdY.toFixed(1)}`);
-      wobbleEl.setAttribute('scale', wobble.toFixed(1));
+      if (wobbleEl) wobbleEl.setAttribute('scale', wobble.toFixed(1));
 
       if (tints) {
         tintEl.setAttribute('values', buildTintMatrix(tints[i], opacity));
@@ -429,8 +456,8 @@ export default class FilmEmulator {
       }
     }
 
-    // SVG filter for trails/wobble (may fail silently in Safari)
-    this._blurWrapper.style.filter = 'url(#motionBlur)';
+    // SVG filter for trails (+ wobble on non-Safari)
+    this._blurWrapper.style.filter = `url(#${this._svgFilterId})`;
 
     // CSS blur fallback on content — always works, provides base motion blur
     const cssBl = Math.min(baseStrength * 6, maxBlur);
@@ -447,7 +474,7 @@ export default class FilmEmulator {
     this._shutterActive = true;
 
     // Per-trail displayed strength (soft onset lerp targets)
-    const display = [0, 0, 0];
+    const display = [0, 0, 0, 0, 0];
     const configs = FilmEmulator.TRAIL_CONFIGS;
     const lerp = FilmEmulator.ONSET_LERP;
 
@@ -459,7 +486,7 @@ export default class FilmEmulator {
 
       // Per-trail decay + soft onset
       let anyActive = false;
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < configs.length; i++) {
         const goal = target * configs[i].decay / 0.88; // scale target by relative decay
         // Lerp toward target (soft onset), then apply per-trail decay
         display[i] = display[i] + (goal - display[i]) * lerp;
@@ -515,7 +542,7 @@ export default class FilmEmulator {
     if (this._shutter <= 0 || !this._svgBase) return;
     this._cursorActive = true;
 
-    const display = [0, 0, 0];
+    const display = [0, 0, 0, 0, 0];
     const configs = FilmEmulator.TRAIL_CONFIGS;
     const lerp = FilmEmulator.ONSET_LERP;
 
@@ -528,7 +555,7 @@ export default class FilmEmulator {
       const target = rawT * this._shutter;
 
       let anyActive = false;
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < configs.length; i++) {
         const goal = target * configs[i].decay / 0.85;
         display[i] = display[i] + (goal - display[i]) * lerp;
         display[i] *= configs[i].decay;
@@ -581,7 +608,7 @@ export default class FilmEmulator {
     if (this._shutter <= 0 || !this._svgBase) return;
     this._gyroActive = true;
 
-    const display = [0, 0, 0];
+    const display = [0, 0, 0, 0, 0];
     const configs = FilmEmulator.TRAIL_CONFIGS;
     const lerp = FilmEmulator.ONSET_LERP;
 
@@ -594,7 +621,7 @@ export default class FilmEmulator {
       const target = rawT * this._shutter;
 
       let anyActive = false;
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < configs.length; i++) {
         const goal = target * configs[i].decay / 0.85;
         display[i] = display[i] + (goal - display[i]) * lerp;
         display[i] *= configs[i].decay;
