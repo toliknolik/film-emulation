@@ -295,6 +295,7 @@ export default class FilmEmulator {
   /* ── slow shutter (SVG directional motion blur) ────────────── */
 
   _initScrollTracker() {
+    // Desktop: scroll events on the content div
     this._content.addEventListener('scroll', () => {
       const now = performance.now();
       const dy = this._content.scrollTop - this._scrollY;
@@ -306,6 +307,34 @@ export default class FilmEmulator {
 
       const vel = Math.abs(dy) / dt;
       this._scrollVelocity = Math.max(this._scrollVelocity, vel);
+
+      if (!this._shutterActive) this._startShutterLoop();
+    }, { passive: true });
+
+    // Mobile: touchmove fires reliably during scroll on iOS Safari
+    // (scroll events are throttled during momentum scrolling)
+    let lastTouchY = 0;
+    let lastTouchTime = 0;
+
+    this._content.addEventListener('touchstart', (e) => {
+      lastTouchY = e.touches[0].clientY;
+      lastTouchTime = performance.now();
+    }, { passive: true });
+
+    this._content.addEventListener('touchmove', (e) => {
+      if (this._shutter <= 0) return;
+      const now = performance.now();
+      const y = e.touches[0].clientY;
+      const dy = y - lastTouchY;
+      const dt = now - lastTouchTime || 16;
+
+      if (dy !== 0) this._scrollDir = dy > 0 ? 1 : -1; // touch moves opposite to scroll
+
+      const vel = Math.abs(dy) / dt;
+      this._scrollVelocity = Math.max(this._scrollVelocity, vel);
+
+      lastTouchY = y;
+      lastTouchTime = now;
 
       if (!this._shutterActive) this._startShutterLoop();
     }, { passive: true });
