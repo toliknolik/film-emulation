@@ -363,6 +363,8 @@ export default class FilmEmulator {
       wobbleEl.setAttribute('scale', '0');
       tintEl.setAttribute('values', zero);
     }
+    // Restore clean CSS grade (remove motion blur from content)
+    this._content.style.filter = this.stock.buildCSSFilter(this._grade);
   }
 
   /* ── Unified motion blur applicator ─────────────────────────── */
@@ -427,7 +429,15 @@ export default class FilmEmulator {
       }
     }
 
+    // SVG filter for trails/wobble (may fail silently in Safari)
     this._blurWrapper.style.filter = 'url(#motionBlur)';
+
+    // CSS blur fallback on content — always works, provides base motion blur
+    const cssBl = Math.min(baseStrength * 6, maxBlur);
+    const grade = this.stock.buildCSSFilter(this._grade);
+    this._content.style.filter = grade
+      ? `${grade} blur(${cssBl.toFixed(1)}px)`
+      : `blur(${cssBl.toFixed(1)}px)`;
   }
 
   /* ── Scroll-driven shutter loop ────────────────────────────── */
